@@ -1,0 +1,657 @@
+{
+  "total_notes": 820,
+  "total_instruments": 64,
+  "duration_sec": 318.306,
+  "switches": [
+    {
+      "encyclopedia_idx": 1,
+      "program": 0,
+      "instrument": "Acoustic Grand Piano",
+      "archetype": "piano",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "start_time": 0.0,
+      "note_index": 0
+    },
+    {
+      "encyclopedia_idx": 2,
+      "program": 2,
+      "instrument": "Electric Grand Piano",
+      "archetype": "piano",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "start_time": 4.898,
+      "note_index": 12
+    },
+    {
+      "encyclopedia_idx": 3,
+      "program": 4,
+      "instrument": "Electric Piano",
+      "archetype": "piano",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "start_time": 9.7959,
+      "note_index": 22
+    },
+    {
+      "encyclopedia_idx": 4,
+      "program": 6,
+      "instrument": "Harpsichord",
+      "archetype": "piano",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "start_time": 14.6939,
+      "note_index": 33
+    },
+    {
+      "encyclopedia_idx": 5,
+      "program": 8,
+      "instrument": "Celesta",
+      "archetype": "glockenspiel",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "start_time": 19.5918,
+      "note_index": 46
+    },
+    {
+      "encyclopedia_idx": 6,
+      "program": 9,
+      "instrument": "Glockenspiel",
+      "archetype": "glockenspiel",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "start_time": 24.4898,
+      "note_index": 58
+    },
+    {
+      "encyclopedia_idx": 7,
+      "program": 10,
+      "instrument": "Music Box",
+      "archetype": "glockenspiel",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "start_time": 29.3877,
+      "note_index": 73
+    },
+    {
+      "encyclopedia_idx": 8,
+      "program": 11,
+      "instrument": "Vibraphone",
+      "archetype": "xylophone",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "start_time": 34.2857,
+      "note_index": 85
+    },
+    {
+      "encyclopedia_idx": 9,
+      "program": 12,
+      "instrument": "Marimba",
+      "archetype": "xylophone",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "start_time": 39.1836,
+      "note_index": 99
+    },
+    {
+      "encyclopedia_idx": 10,
+      "program": 13,
+      "instrument": "Xylophone",
+      "archetype": "xylophone",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "start_time": 44.0816,
+      "note_index": 112
+    },
+    {
+      "encyclopedia_idx": 11,
+      "program": 14,
+      "instrument": "Tubular Bells",
+      "archetype": "tubular_bells",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "start_time": 48.9795,
+      "note_index": 124
+    },
+    {
+      "encyclopedia_idx": 12,
+      "program": 15,
+      "instrument": "Dulcimer",
+      "archetype": "guitar",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "start_time": 53.8775,
+      "note_index": 136
+    },
+    {
+      "encyclopedia_idx": 13,
+      "program": 16,
+      "instrument": "Drawbar Organ",
+      "archetype": "organ",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "start_time": 58.7754,
+      "note_index": 149
+    },
+    {
+      "encyclopedia_idx": 14,
+      "program": 19,
+      "instrument": "Church Organ",
+      "archetype": "organ",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "start_time": 63.6734,
+      "note_index": 161
+    },
+    {
+      "encyclopedia_idx": 15,
+      "program": 21,
+      "instrument": "Accordion",
+      "archetype": "accordion",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "start_time": 68.5713,
+      "note_index": 176
+    },
+    {
+      "encyclopedia_idx": 16,
+      "program": 22,
+      "instrument": "Harmonica",
+      "archetype": "accordion",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "start_time": 73.4693,
+      "note_index": 188
+    },
+    {
+      "encyclopedia_idx": 17,
+      "program": 24,
+      "instrument": "Nylon Guitar",
+      "archetype": "guitar",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "start_time": 78.3672,
+      "note_index": 202
+    },
+    {
+      "encyclopedia_idx": 18,
+      "program": 25,
+      "instrument": "Steel Guitar",
+      "archetype": "guitar",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "start_time": 83.2652,
+      "note_index": 215
+    },
+    {
+      "encyclopedia_idx": 19,
+      "program": 27,
+      "instrument": "Clean Electric Guitar",
+      "archetype": "guitar",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "start_time": 88.1631,
+      "note_index": 227
+    },
+    {
+      "encyclopedia_idx": 20,
+      "program": 30,
+      "instrument": "Distortion Guitar",
+      "archetype": "guitar",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "start_time": 93.0611,
+      "note_index": 240
+    },
+    {
+      "encyclopedia_idx": 21,
+      "program": 32,
+      "instrument": "Acoustic Bass",
+      "archetype": "guitar",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "start_time": 97.959,
+      "note_index": 253
+    },
+    {
+      "encyclopedia_idx": 22,
+      "program": 35,
+      "instrument": "Fretless Bass",
+      "archetype": "guitar",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "start_time": 102.857,
+      "note_index": 265
+    },
+    {
+      "encyclopedia_idx": 23,
+      "program": 45,
+      "instrument": "Pizzicato Strings",
+      "archetype": "strings",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "start_time": 107.7549,
+      "note_index": 280
+    },
+    {
+      "encyclopedia_idx": 24,
+      "program": 46,
+      "instrument": "Orchestral Harp",
+      "archetype": "guitar",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "start_time": 112.6529,
+      "note_index": 292
+    },
+    {
+      "encyclopedia_idx": 25,
+      "program": 40,
+      "instrument": "Violin",
+      "archetype": "strings",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "start_time": 117.5508,
+      "note_index": 306
+    },
+    {
+      "encyclopedia_idx": 26,
+      "program": 41,
+      "instrument": "Viola",
+      "archetype": "strings",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "start_time": 122.4488,
+      "note_index": 316
+    },
+    {
+      "encyclopedia_idx": 27,
+      "program": 42,
+      "instrument": "Cello",
+      "archetype": "strings",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "start_time": 127.3468,
+      "note_index": 327
+    },
+    {
+      "encyclopedia_idx": 28,
+      "program": 43,
+      "instrument": "Contrabass",
+      "archetype": "strings",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "start_time": 132.2447,
+      "note_index": 339
+    },
+    {
+      "encyclopedia_idx": 29,
+      "program": 48,
+      "instrument": "String Ensemble",
+      "archetype": "strings",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "start_time": 137.1427,
+      "note_index": 352
+    },
+    {
+      "encyclopedia_idx": 30,
+      "program": 52,
+      "instrument": "Choir Aahs",
+      "archetype": "choir",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "start_time": 142.0406,
+      "note_index": 364
+    },
+    {
+      "encyclopedia_idx": 31,
+      "program": 53,
+      "instrument": "Voice Oohs",
+      "archetype": "choir",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "start_time": 146.9386,
+      "note_index": 379
+    },
+    {
+      "encyclopedia_idx": 32,
+      "program": 55,
+      "instrument": "Orchestra Hit",
+      "archetype": "gong",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "start_time": 151.8365,
+      "note_index": 391
+    },
+    {
+      "encyclopedia_idx": 33,
+      "program": 56,
+      "instrument": "Trumpet",
+      "archetype": "brass",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "start_time": 156.7345,
+      "note_index": 405
+    },
+    {
+      "encyclopedia_idx": 34,
+      "program": 57,
+      "instrument": "Trombone",
+      "archetype": "brass",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "start_time": 161.6324,
+      "note_index": 417
+    },
+    {
+      "encyclopedia_idx": 35,
+      "program": 58,
+      "instrument": "Tuba",
+      "archetype": "brass",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "start_time": 166.5304,
+      "note_index": 427
+    },
+    {
+      "encyclopedia_idx": 36,
+      "program": 59,
+      "instrument": "Muted Trumpet",
+      "archetype": "brass",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "start_time": 171.4283,
+      "note_index": 438
+    },
+    {
+      "encyclopedia_idx": 37,
+      "program": 60,
+      "instrument": "French Horn",
+      "archetype": "brass",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "start_time": 176.3263,
+      "note_index": 451
+    },
+    {
+      "encyclopedia_idx": 38,
+      "program": 61,
+      "instrument": "Brass Section",
+      "archetype": "brass",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "start_time": 181.2242,
+      "note_index": 463
+    },
+    {
+      "encyclopedia_idx": 39,
+      "program": 64,
+      "instrument": "Soprano Sax",
+      "archetype": "brass",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "start_time": 186.1222,
+      "note_index": 478
+    },
+    {
+      "encyclopedia_idx": 40,
+      "program": 65,
+      "instrument": "Alto Sax",
+      "archetype": "brass",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "start_time": 191.0201,
+      "note_index": 490
+    },
+    {
+      "encyclopedia_idx": 41,
+      "program": 66,
+      "instrument": "Tenor Sax",
+      "archetype": "brass",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "start_time": 195.9181,
+      "note_index": 504
+    },
+    {
+      "encyclopedia_idx": 42,
+      "program": 68,
+      "instrument": "Oboe",
+      "archetype": "flute",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "start_time": 200.816,
+      "note_index": 517
+    },
+    {
+      "encyclopedia_idx": 43,
+      "program": 69,
+      "instrument": "English Horn",
+      "archetype": "flute",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "start_time": 205.714,
+      "note_index": 529
+    },
+    {
+      "encyclopedia_idx": 44,
+      "program": 70,
+      "instrument": "Bassoon",
+      "archetype": "flute",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "start_time": 210.6119,
+      "note_index": 541
+    },
+    {
+      "encyclopedia_idx": 45,
+      "program": 71,
+      "instrument": "Clarinet",
+      "archetype": "flute",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "start_time": 215.5099,
+      "note_index": 554
+    },
+    {
+      "encyclopedia_idx": 46,
+      "program": 72,
+      "instrument": "Piccolo",
+      "archetype": "flute",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "start_time": 220.4078,
+      "note_index": 566
+    },
+    {
+      "encyclopedia_idx": 47,
+      "program": 73,
+      "instrument": "Flute",
+      "archetype": "flute",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "start_time": 225.3058,
+      "note_index": 581
+    },
+    {
+      "encyclopedia_idx": 48,
+      "program": 74,
+      "instrument": "Recorder",
+      "archetype": "flute",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "start_time": 230.2037,
+      "note_index": 593
+    },
+    {
+      "encyclopedia_idx": 49,
+      "program": 75,
+      "instrument": "Pan Flute",
+      "archetype": "flute",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "start_time": 235.1017,
+      "note_index": 607
+    },
+    {
+      "encyclopedia_idx": 50,
+      "program": 77,
+      "instrument": "Shakuhachi",
+      "archetype": "flute",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "start_time": 239.9996,
+      "note_index": 620
+    },
+    {
+      "encyclopedia_idx": 51,
+      "program": 78,
+      "instrument": "Whistle",
+      "archetype": "flute",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "start_time": 244.8976,
+      "note_index": 632
+    },
+    {
+      "encyclopedia_idx": 52,
+      "program": 79,
+      "instrument": "Ocarina",
+      "archetype": "flute",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "start_time": 249.7956,
+      "note_index": 645
+    },
+    {
+      "encyclopedia_idx": 53,
+      "program": 104,
+      "instrument": "Sitar",
+      "archetype": "guitar",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "start_time": 254.6935,
+      "note_index": 658
+    },
+    {
+      "encyclopedia_idx": 54,
+      "program": 105,
+      "instrument": "Banjo",
+      "archetype": "guitar",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "start_time": 259.5915,
+      "note_index": 670
+    },
+    {
+      "encyclopedia_idx": 55,
+      "program": 106,
+      "instrument": "Shamisen",
+      "archetype": "guitar",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "start_time": 264.4894,
+      "note_index": 685
+    },
+    {
+      "encyclopedia_idx": 56,
+      "program": 107,
+      "instrument": "Koto",
+      "archetype": "guitar",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "start_time": 269.3874,
+      "note_index": 697
+    },
+    {
+      "encyclopedia_idx": 57,
+      "program": 108,
+      "instrument": "Kalimba",
+      "archetype": "xylophone",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "start_time": 274.2853,
+      "note_index": 711
+    },
+    {
+      "encyclopedia_idx": 58,
+      "program": 109,
+      "instrument": "Bagpipe",
+      "archetype": "flute",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "start_time": 279.1833,
+      "note_index": 721
+    },
+    {
+      "encyclopedia_idx": 59,
+      "program": 111,
+      "instrument": "Shanai",
+      "archetype": "flute",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "start_time": 284.0812,
+      "note_index": 732
+    },
+    {
+      "encyclopedia_idx": 60,
+      "program": 114,
+      "instrument": "Steel Drums",
+      "archetype": "steel_drum",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "start_time": 288.9792,
+      "note_index": 744
+    },
+    {
+      "encyclopedia_idx": 61,
+      "program": 115,
+      "instrument": "Woodblock",
+      "archetype": "castanet",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "start_time": 293.8771,
+      "note_index": 757
+    },
+    {
+      "encyclopedia_idx": 62,
+      "program": 80,
+      "instrument": "Square Lead",
+      "archetype": "synth",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "start_time": 298.7751,
+      "note_index": 769
+    },
+    {
+      "encyclopedia_idx": 63,
+      "program": 81,
+      "instrument": "Sawtooth Lead",
+      "archetype": "synth",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "start_time": 303.673,
+      "note_index": 784
+    },
+    {
+      "encyclopedia_idx": 64,
+      "program": 88,
+      "instrument": "New Age Pad",
+      "archetype": "synth",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "start_time": 308.571,
+      "note_index": 796
+    },
+    {
+      "encyclopedia_idx": 1,
+      "program": 0,
+      "instrument": "Acoustic Grand Piano",
+      "archetype": "piano",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "start_time": 313.4689,
+      "note_index": 810
+    }
+  ]
+}
