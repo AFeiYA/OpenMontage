@@ -1,0 +1,11 @@
+# This is an Asset Catalog Definition file for Blender.
+#
+# Empty lines and lines starting with `#` will be ignored.
+# The first non-ignored line should be the version indicator.
+VERSION 1
+
+a1b2c3d4-1111-4000-8000-000000000001:Instruments/Percussion:Percussion
+a1b2c3d4-1111-4000-8000-000000000002:Instruments/Keyboards & Bells:Keyboards-Bells
+a1b2c3d4-1111-4000-8000-000000000003:Instruments/Melodic & Pluck:Melodic-Pluck
+a1b2c3d4-1111-4000-8000-000000000004:Materials/Studio PBR:Studio-PBR
+a1b2c3d4-1111-4000-8000-000000000005:Stage & Hardware:Stage-Hardware
