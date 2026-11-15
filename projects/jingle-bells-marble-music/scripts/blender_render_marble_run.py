@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-"""Blender 5.3 scene builder & renderer for trajectory-first Marble Music (v4 Lookdev).
+"""Blender 5.3 scene builder & renderer for trajectory-first Marble Music (v5 — 64-Instrument Library).
 
 Features:
-- Pulls all 12 sculpted instrument assemblies & procedural PBR shaders directly from
-  the reusable Asset Library `assets/instrument_library.blend`.
-- Dark Acoustic Stage lookdev (Option 1):
-  * Vertical smoked-walnut acoustic wall slats + charcoal acoustic felt + brass reveal trims.
-  * Procedural high-contrast studio softbox reflection World (via Light Path Glossy Ray)
-    + EEVEE raytracing + tracking warm hero spot & cool rim light + emerald marble glow light.
-  * Animated tangent shockwave halo rings on every impact + Blender 5.3 Bloom compositor.
-  * 3/4 oblique parallax tracking camera with shallow Depth of Field on the marble.
-- Clean Outliner collections: 01_Marble, 02_Instruments, 03_GuideRails, 04_StudioStage, 05_ImpactFX.
-- Attaches pre-roll synced WAV audio to Blender VSE (`AUDIO_SYNC`).
+- Pulls all 64 sculpted GM instrument assemblies & procedural PBR shaders from
+  the reusable Asset Library `assets/instrument_library_v2.blend` + `instrument_manifest_v2.json`.
+- Preserves full child object transforms (location/rotation/scale) & multi-material slots.
+- Supports all 64 GM instruments + full backward-compatibility mapping for legacy 12-track plans.
+- Per-part mechanical & expressive hit animations (keys, mallets, bars, bellows, slides, bows,
+  valves, woodwind keys, plucked strings, gong/chime pendulums, synth VU/LED waveforms).
 """
 
 from __future__ import annotations
@@ -24,13 +20,49 @@ import sys
 
 import bpy
 import bmesh
-from mathutils import Matrix, Quaternion, Vector
+from mathutils import Euler, Matrix, Quaternion, Vector
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_LIB_BLEND = os.path.abspath(
-    os.path.join(SCRIPT_DIR, "..", "assets", "instrument_library.blend")
-)
+ASSETS_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "assets"))
+DEFAULT_LIB_BLEND = os.path.join(ASSETS_DIR, "instrument_library_v2.blend")
+DEFAULT_MANIFEST_JSON = os.path.join(ASSETS_DIR, "instrument_manifest_v2.json")
+
+# Backward-compatibility map: legacy 1..12 track indices -> General MIDI program
+LEGACY_TRACK_TO_GM: dict[int, int] = {
+    1: 115,  # Castanets -> Woodblock
+    2: 0,    # Piano -> Acoustic Grand Piano
+    3: 11,   # Vibraphone -> Vibraphone
+    4: 14,   # TubularBells -> Tubular Bells
+    5: 12,   # Marimba -> Marimba
+    6: 108,  # Kalimba -> Kalimba
+    7: 73,   # Flute -> Flute
+    8: 13,   # Xylophone -> Xylophone
+    9: 79,   # Ocarina -> Ocarina
+    10: 9,   # Glockenspiel -> Glockenspiel
+    11: 114, # SteelDrums -> Steel Drums
+    12: 24,  # Guitar -> Nylon Guitar
+}
+
+LEGACY_NAME_TO_GM: dict[str, int] = {
+    "castanets": 115,
+    "castanet": 115,
+    "piano": 0,
+    "grand_piano": 0,
+    "vibraphone": 11,
+    "tubular_bells": 14,
+    "tubularbells": 14,
+    "marimba": 12,
+    "kalimba": 108,
+    "flute": 73,
+    "xylophone": 13,
+    "ocarina": 79,
+    "glockenspiel": 9,
+    "steel_drums": 114,
+    "steeldrums": 114,
+    "steel_drum": 114,
+    "guitar": 24,
+}
 
 
 # -------------------- Helper Utilities --------------------
@@ -66,21 +98,40 @@ def get_eevee_engine() -> str:
 def ensure_instrument_library(lib_path: str):
     if os.path.exists(lib_path):
         return
-    builder = os.path.join(SCRIPT_DIR, "build_instrument_library.py")
+    if os.path.basename(lib_path) == "instrument_library_v2.blend":
+        builder = os.path.join(SCRIPT_DIR, "build_instrument_library_v2.py")
+    else:
+        builder = os.path.join(SCRIPT_DIR, "build_instrument_library.py")
     if not os.path.exists(builder):
         raise FileNotFoundError(f"Instrument library missing and builder not found: {lib_path}")
     subprocess.run([bpy.app.binary_path, "-b", "-P", builder], check=True)
 
 
-def load_instrument_library(lib_path: str) -> tuple[dict[int, dict], dict[str, bpy.types.Material]]:
-    """Append all 12 unit instrument assemblies & LibMat_* PBR shaders from instrument_library.blend."""
+def load_instrument_manifest(manifest_path: str | None = None) -> dict:
+    mpath = manifest_path or DEFAULT_MANIFEST_JSON
+    if not os.path.exists(mpath):
+        return {}
+    with open(mpath, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def load_instrument_library(
+    lib_path: str = DEFAULT_LIB_BLEND,
+    manifest_path: str | None = None,
+) -> tuple[dict[int, dict], dict[str, bpy.types.Material], dict]:
+    """Append all 64 (or 12 legacy) instrument assemblies & LibMat_* PBR shaders."""
     ensure_instrument_library(lib_path)
+    manifest = load_instrument_manifest(manifest_path)
+    by_prog_manifest = manifest.get("by_program", {})
 
     with bpy.data.libraries.load(lib_path, link=False) as (data_from, data_to):
         data_to.collections = [c for c in data_from.collections if c.startswith("Lib_")]
         data_to.materials = [m for m in data_from.materials if m.startswith("LibMat_")]
 
     mats = {m.name: m for m in bpy.data.materials if m.name.startswith("LibMat_")}
+    for m in mats.values():
+        m.use_fake_user = True
+
     templates: dict[int, dict] = {}
     temp_cols = []
 
@@ -88,69 +139,118 @@ def load_instrument_library(lib_path: str) -> tuple[dict[int, dict], dict[str, b
         if not col.name.startswith("Lib_"):
             continue
         temp_cols.append(col)
-        parts = col.name.split("_", 2)
-        if len(parts) < 2 or not parts[1].isdigit():
+        parts = col.name.split("_")
+        # Support both `Lib_{idx:02d}_GM{gm:03d}_{Name}` (v2/v3) and `Lib_{idx:02d}_{Name}` (legacy)
+        if len(parts) >= 3 and parts[1].isdigit() and parts[2].startswith("GM") and parts[2][2:].isdigit():
+            t_idx = int(parts[1])
+            gm_prog = int(parts[2][2:])
+        elif len(parts) >= 2 and parts[1].isdigit():
+            t_idx = int(parts[1])
+            gm_prog = LEGACY_TRACK_TO_GM.get(t_idx, t_idx)
+        else:
             continue
-        t_idx = int(parts[1])
+
         core_obj = None
         sub_objs = []
         for obj in col.objects:
-            if obj.name.startswith("LibCore_"):
+            if obj.data is not None:
+                obj.data.use_fake_user = True
+            if obj.name.startswith("LibCore_") or obj.name.endswith("_Core"):
                 core_obj = obj
-            elif obj.name.startswith("LibSub_"):
+            else:
                 sub_objs.append(obj)
-        templates[t_idx] = {
-            "core_mesh": core_obj.data if core_obj else None,
-            "core_mat": core_obj.data.materials[0] if (core_obj and core_obj.data.materials) else None,
-            "subs": [(o.name, o.data, list(o.data.materials)) for o in sub_objs],
-        }
 
-    # Remove imported template objects & staging collections while keeping reusable mesh/material datablocks
+        m_info = by_prog_manifest.get(str(gm_prog), {})
+        tpl_entry = {
+            "index": t_idx,
+            "gm_program": gm_prog,
+            "name": m_info.get("name", col.name),
+            "anim_family": m_info.get("anim_family", "generic_strike"),
+            "glow_color": tuple(m_info.get("glow_color", (1.0, 0.78, 0.30))),
+            "core_mesh": core_obj.data if core_obj else None,
+            "core_mat": core_obj.data.materials[0] if (core_obj and core_obj.data and core_obj.data.materials) else None,
+            "subs": [
+                (
+                    o.name,
+                    o.data,
+                    list(o.data.materials) if o.data else [],
+                    o.location.copy(),
+                    o.rotation_euler.copy(),
+                    o.scale.copy(),
+                )
+                for o in sub_objs
+                if o.data is not None
+            ],
+        }
+        templates[gm_prog] = tpl_entry
+        # Also allow lookup by catalog index or negative legacy key via secondary mapping
+        templates.setdefault(-1000 - t_idx, tpl_entry)
+
+    # Remove imported template staging objects/collections while keeping fake-user datablocks intact
     for col in temp_cols:
         for obj in list(col.objects):
             bpy.data.objects.remove(obj, do_unlink=True)
         bpy.data.collections.remove(col)
 
-    return templates, mats
+    return templates, mats, manifest
 
 
-def get_board_material_and_glow(board: dict, mats: dict[str, bpy.types.Material]) -> tuple[bpy.types.Material, tuple[float, float, float], float]:
-    """Select pitch-accurate material from imported Asset Library + calibrated hit glow color."""
-    t_idx = int(board["track_idx"])
-    midi_note = int(board["note"])
+def resolve_board_gm_program(board: dict, manifest: dict | None = None) -> int:
+    """Resolve General MIDI program (0..115) from explicit gm_program, instrument name, or legacy track_idx."""
+    if "gm_program" in board and board["gm_program"] is not None:
+        return int(board["gm_program"])
+    inst_name = str(board.get("instrument", "")).strip().lower().replace(" ", "_")
+    inst_type = str(board.get("instrument_type", "")).strip().lower().replace(" ", "_")
+    if manifest:
+        for gm_str, meta in manifest.get("by_program", {}).items():
+            mname = str(meta.get("name", "")).strip().lower().replace(" ", "_")
+            if inst_name == mname or inst_type == mname or inst_type == meta.get("variant"):
+                return int(gm_str)
+    for key in (inst_type, inst_name):
+        if key in LEGACY_NAME_TO_GM:
+            return LEGACY_NAME_TO_GM[key]
+    t_idx = int(board.get("track_idx", 1))
+    return LEGACY_TRACK_TO_GM.get(t_idx, 0)
+
+
+def get_board_material_and_glow(
+    board: dict,
+    mats: dict[str, bpy.types.Material],
+    templates: dict[int, dict] | None = None,
+    manifest: dict | None = None,
+) -> tuple[bpy.types.Material, tuple[float, float, float], float]:
+    """Select pitch-accurate material from Asset Library + calibrated hit glow color."""
+    gm = resolve_board_gm_program(board, manifest)
+    midi_note = int(board.get("note", 60))
     pc = midi_note % 12
+    tpl = (templates or {}).get(gm)
 
-    xylo_keys = [
-        ("LibMat_08_Xylo_Red", (1.0, 0.22, 0.20)),
-        ("LibMat_08_Xylo_Amber", (1.0, 0.56, 0.16)),
-        ("LibMat_08_Xylo_Gold", (1.0, 0.84, 0.22)),
-        ("LibMat_08_Xylo_Emerald", (0.24, 0.92, 0.48)),
-        ("LibMat_08_Xylo_Azure", (0.26, 0.74, 1.0)),
-        ("LibMat_08_Xylo_Violet", (0.68, 0.42, 1.0)),
-    ]
+    # Piano / Harpsichord / Electric Piano sharp vs natural key contrast
+    if gm in (0, 2, 4, 6):
+        if pc in {1, 3, 6, 8, 10} and "LibMat_Ebony" in mats:
+            return mats["LibMat_Ebony"].copy(), (0.35, 0.85, 1.0), 4.2
+        if "LibMat_Ivory" in mats:
+            return mats["LibMat_Ivory"].copy(), (0.75, 0.94, 1.0), 2.8
 
-    if t_idx == 2:
-        if pc in {1, 3, 6, 8, 10}:
-            return mats["LibMat_02_PianoEbony"].copy(), (0.35, 0.85, 1.0), 4.2
-        return mats["LibMat_02_PianoIvory"].copy(), (0.75, 0.94, 1.0), 2.8
-    if t_idx == 8:
-        mname, glow_c = xylo_keys[midi_note % len(xylo_keys)]
-        return mats[mname].copy(), glow_c, 3.8
+    # Xylophone jewel-tone pitch palette using rich gloss copies
+    if gm == 13 and "LibMat_XyloGold" in mats:
+        xylo_cols = [
+            (0.88, 0.14, 0.14),
+            (0.94, 0.44, 0.08),
+            (0.94, 0.76, 0.10),
+            (0.12, 0.72, 0.34),
+            (0.12, 0.56, 0.90),
+            (0.50, 0.22, 0.88),
+        ]
+        jc = xylo_cols[midi_note % len(xylo_cols)]
+        xm = mats["LibMat_XyloGold"].copy()
+        bsdf = next(n for n in xm.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+        set_socket(bsdf, "Base Color", (*jc, 1.0))
+        return xm, jc, 3.8
 
-    glow_map = {
-        1: ("LibMat_01_Castanets", (1.0, 0.65, 0.22), 3.6),
-        3: ("LibMat_03_Vibraphone", (0.48, 0.86, 1.0), 3.6),
-        4: ("LibMat_04_TubularBells", (1.0, 0.82, 0.28), 3.8),
-        5: ("LibMat_05_Marimba", (1.0, 0.48, 0.20), 3.6),
-        6: ("LibMat_06_Kalimba", (0.58, 0.92, 1.0), 3.6),
-        7: ("LibMat_07_Flute", (0.62, 0.96, 1.0), 3.4),
-        9: ("LibMat_09_Ocarina", (0.35, 0.80, 1.0), 4.0),
-        10: ("LibMat_10_Glockenspiel", (0.78, 0.95, 1.0), 3.6),
-        11: ("LibMat_11_SteelDrums", (0.38, 0.88, 1.0), 3.8),
-        12: ("LibMat_12_Guitar", (1.0, 0.76, 0.28), 3.6),
-    }
-    mname, glow_c, strength = glow_map.get(t_idx, ("LibMat_01_Castanets", (1.0, 0.7, 0.3), 3.5))
-    return mats[mname].copy(), glow_c, strength
+    core_mat = tpl["core_mat"] if (tpl and tpl.get("core_mat")) else mats.get("LibMat_Walnut") or next(iter(mats.values()))
+    glow_c = tpl["glow_color"] if tpl else (1.0, 0.78, 0.30)
+    return core_mat.copy(), glow_c, 3.6
 
 
 _BOX_MESH_CACHE: dict[tuple[float, float, float], bpy.types.Mesh] = {}
@@ -669,6 +769,612 @@ def plan_lookahead_camera(
     return out_x, out_y, out_z
 
 
+# -------------------- Opening 3D Brand Plaque --------------------
+
+def create_opening_3d_brand_text(
+    anchor_x: float,
+    wall_y: float,
+    anchor_z: float,
+    brass_mat,
+    dark_mat,
+    collection,
+):
+    """Embed physical 3D extruded 'LUCA MARBLE MUSIC' channel branding on the opening wall.
+
+    Mounted proud of the matte acoustic wall so studio spotlights cast real 3D shadows
+    and the watermark is physically part of the scene geometry (resistant to cropping).
+    """
+    specs = [
+        ("BrandTitle3D", "LUCA MARBLE MUSIC", 0.105, 0.018, 0.003, anchor_z, brass_mat),
+        ("BrandHandle3D", "@LucaMarbleMusic", 0.064, 0.012, 0.002, anchor_z - 0.135, brass_mat),
+    ]
+    objs = []
+    for name, text, size, extrude, bevel, z_pos, mat in specs:
+        curve = bpy.data.curves.new(name=f"{name}_Curve", type="FONT")
+        curve.body = text
+        curve.align_x = "CENTER"
+        curve.align_y = "CENTER"
+        curve.size = size
+        curve.extrude = extrude
+        curve.bevel_depth = bevel
+        curve.bevel_resolution = 3
+        curve.space_character = 1.06
+
+        obj = bpy.data.objects.new(name, curve)
+        obj.location = (anchor_x, wall_y - 0.028, z_pos)
+        obj.rotation_euler = (math.pi / 2.0, 0.0, 0.0)
+        if mat is not None:
+            obj.data.materials.append(mat)
+        collection.objects.link(obj)
+        objs.append(obj)
+
+    # Subtle dark bevelled backing bar behind the 3D lettering for crisp contrast & shadow catch
+    backing_w = 1.48
+    backing_h = 0.34
+    backing_d = 0.016
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(anchor_x, wall_y - backing_d * 0.5, anchor_z - 0.062))
+    backing = bpy.context.active_object
+    backing.name = "BrandPlaqueBacking"
+    backing.scale = (backing_w, backing_d, backing_h)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    if dark_mat is not None:
+        backing.data.materials.append(dark_mat)
+    for c in list(backing.users_collection):
+        c.objects.unlink(backing)
+    collection.objects.link(backing)
+    objs.append(backing)
+    return objs
+
+
+# -------------------- 64-Instrument Per-Part Hit Animation & Spawning --------------------
+
+_HIGHLIGHT_TOKEN_HINTS = (
+    "_WKey_", "_BKey_", "_ToneBar_", "_SteelBar_", "_CombTooth_", "_Tine_",
+    "_Petal_", "_GongDish", "_GongBoss", "_VU_", "_SqStep_", "_SqVert_",
+    "_SawRamp_", "_SawDrop_", "_PadOuter", "_PadInner", "_PadCore",
+    "_ScreenGlass", "_Bell", "_BigBell", "_WideBell", "_UpBell", "_FlareBell",
+    "_PearBell", "_Str_", "_HarpStr_", "_PluckedStr", "_MelodyStr_", "_DroneStr_",
+    "_Pipe_", "_FanPipe_", "_Drawbar_", "_ModWheel", "_MalletHead", "_MalletYarn",
+    "_MalletBall", "_MalletFleece",
+)
+
+
+def _should_highlight_part(sub_name: str, anim_family: str) -> bool:
+    for tok in _HIGHLIGHT_TOKEN_HINTS:
+        if tok in sub_name:
+            return True
+    if anim_family == "ocarina_pulse" and ("Ocarina" in sub_name or "Body" in sub_name):
+        return True
+    return False
+
+
+def _filter_parts(spawned_subs: list[dict], *tokens: str) -> list[dict]:
+    out = []
+    for p in spawned_subs:
+        nm = p["base_name"]
+        if any(t in nm for t in tokens):
+            out.append(p)
+    return out
+
+
+def _pick_pitch_matched_part(parts: list[dict], pitch_frac: float) -> dict | None:
+    if not parts:
+        return None
+    sorted_parts = sorted(parts, key=lambda p: p["orig_loc"].x)
+    idx = min(len(sorted_parts) - 1, max(0, int(round(pitch_frac * (len(sorted_parts) - 1)))))
+    return sorted_parts[idx]
+
+
+def keyframe_part_transform(
+    part: dict,
+    keyframes: list[tuple[int, tuple[float, float, float], tuple[float, float, float], tuple[float, float, float]]],
+    pivot: Vector | None = None,
+) -> None:
+    """Keyframe a spawned child part around an arbitrary local pivot point.
+
+    Each keyframe tuple is: (frame, rot_deg_xyz, trans_xyz, scale_mul_xyz).
+    """
+    sobj = part["obj"]
+    orig_loc: Vector = part["orig_loc"]
+    orig_rot_mat = part["orig_rot"].to_matrix()
+    orig_scale: Vector = part["orig_scale"]
+    piv = pivot if pivot is not None else orig_loc
+
+    sobj.rotation_mode = "XYZ"
+    for frame, rot_deg, trans, scale_mul in keyframes:
+        rx, ry, rz = (math.radians(a) for a in rot_deg)
+        r_delta = Euler((rx, ry, rz), "XYZ").to_matrix()
+        loc = piv + (r_delta @ (orig_loc - piv)) + Vector(trans)
+        sobj.location = loc
+        sobj.rotation_euler = (r_delta @ orig_rot_mat).to_euler("XYZ")
+        sobj.scale = Vector((
+            orig_scale.x * scale_mul[0],
+            orig_scale.y * scale_mul[1],
+            orig_scale.z * scale_mul[2],
+        ))
+        f_clamped = max(0, int(frame))
+        sobj.keyframe_insert(data_path="location", frame=f_clamped)
+        sobj.keyframe_insert(data_path="rotation_euler", frame=f_clamped)
+        sobj.keyframe_insert(data_path="scale", frame=f_clamped)
+
+
+def keyframe_emission_pulse(
+    em_sock,
+    f_hit: int,
+    base_val: float,
+    peak_val: float,
+    decay_frames: int,
+    bsdf=None,
+    glow_color: tuple[float, float, float] | None = None,
+) -> None:
+    if em_sock is None:
+        return
+    if bsdf is not None and glow_color is not None:
+        set_socket(bsdf, "Emission Color", (*glow_color, 1.0))
+    em_sock.default_value = base_val
+    em_sock.keyframe_insert(data_path="default_value", frame=max(0, f_hit - 1))
+    em_sock.default_value = peak_val
+    em_sock.keyframe_insert(data_path="default_value", frame=f_hit)
+    em_sock.default_value = base_val + 0.38 * (peak_val - base_val)
+    em_sock.keyframe_insert(data_path="default_value", frame=f_hit + 2)
+    em_sock.default_value = base_val
+    em_sock.keyframe_insert(data_path="default_value", frame=f_hit + max(4, decay_frames))
+
+
+def _create_shockwave_ring(
+    col_fx,
+    ring_mesh,
+    idx: int,
+    contact_pos: Vector,
+    rot_mat: Matrix,
+    glow_color: tuple[float, float, float],
+    f_hit: int,
+    vel_scale: float,
+) -> None:
+    n = Vector((rot_mat[0][2], rot_mat[1][2], rot_mat[2][2])).normalized()
+    ring_obj = bpy.data.objects.new(f"ImpactRing_{idx:03d}", ring_mesh)
+    col_fx.objects.link(ring_obj)
+    rmat, r_em = make_shockwave_material(f"RingMat_{idx:03d}", glow_color)
+    ring_obj.material_slots[0].link = "OBJECT"
+    ring_obj.material_slots[0].material = rmat
+
+    ring_obj.location = contact_pos + n * 0.006
+    ring_obj.rotation_mode = "QUATERNION"
+    ring_obj.rotation_quaternion = rot_mat.to_quaternion()
+
+    ring_obj.hide_viewport = True
+    ring_obj.hide_render = True
+    ring_obj.scale = (0.35, 0.35, 0.35)
+    ring_obj.keyframe_insert(data_path="hide_viewport", frame=max(0, f_hit - 1))
+    ring_obj.keyframe_insert(data_path="hide_render", frame=max(0, f_hit - 1))
+    ring_obj.keyframe_insert(data_path="scale", frame=max(0, f_hit - 1))
+
+    ring_obj.hide_viewport = False
+    ring_obj.hide_render = False
+    ring_obj.scale = (0.42, 0.42, 0.42)
+    ring_obj.keyframe_insert(data_path="hide_viewport", frame=f_hit)
+    ring_obj.keyframe_insert(data_path="hide_render", frame=f_hit)
+    ring_obj.keyframe_insert(data_path="scale", frame=f_hit)
+
+    ring_obj.scale = (1.42, 1.42, 1.42)
+    ring_obj.keyframe_insert(data_path="scale", frame=f_hit + 5)
+
+    ring_obj.hide_viewport = True
+    ring_obj.hide_render = True
+    ring_obj.keyframe_insert(data_path="hide_viewport", frame=f_hit + 6)
+    ring_obj.keyframe_insert(data_path="hide_render", frame=f_hit + 6)
+
+    r_em_sock = r_em.inputs["Strength"]
+    r_em_sock.default_value = 0.0
+    r_em_sock.keyframe_insert(data_path="default_value", frame=max(0, f_hit - 1))
+    r_em_sock.default_value = 8.5 * vel_scale
+    r_em_sock.keyframe_insert(data_path="default_value", frame=f_hit)
+    r_em_sock.default_value = 0.0
+    r_em_sock.keyframe_insert(data_path="default_value", frame=f_hit + 5)
+
+
+def animate_instrument_hit(
+    core_obj: bpy.types.Object,
+    spawned_subs: list[dict],
+    board: dict,
+    mat: bpy.types.Material,
+    glow_color: tuple[float, float, float],
+    hit_glow: float,
+    anim_family: str,
+    vel_scale: float,
+    note_dur: float,
+    fps: int,
+    rot_mat: Matrix,
+) -> None:
+    """Apply bespoke velocity-coupled kinetic & emissive hit feedback to both Core bar and v3.0 parts."""
+    f_hit = int(board["frame_hit"])
+    midi_note = int(board.get("note", 60))
+    pitch_frac = max(0.0, min(1.0, (midi_note - 45) / 36.0))
+    base_pos = Vector(board["center"])
+    u = Vector(board["axis_u"]).normalized()
+    n = Vector(board["axis_n"]).normalized()
+    base_quat = rot_mat.to_quaternion()
+
+    core_obj.keyframe_insert(data_path="location", frame=max(0, f_hit))
+    core_obj.keyframe_insert(data_path="rotation_quaternion", frame=max(0, f_hit))
+
+    # 1. Core Strike Bar Kinetic Motion
+    if anim_family in ("keyboard_hinge", "keyboard_pluck", "organ_drawbars", "organ_pipes", "bellows_accordion"):
+        press_quat = (rot_mat @ Matrix.Rotation(math.radians(6.2 * vel_scale), 3, "X")).to_quaternion()
+        rebound_quat = (rot_mat @ Matrix.Rotation(math.radians(-0.8), 3, "X")).to_quaternion()
+        core_obj.location = base_pos - n * (0.015 * vel_scale)
+        core_obj.rotation_quaternion = press_quat
+        core_obj.keyframe_insert(data_path="location", frame=f_hit + 1)
+        core_obj.keyframe_insert(data_path="rotation_quaternion", frame=f_hit + 1)
+        core_obj.location = base_pos + n * 0.002
+        core_obj.rotation_quaternion = rebound_quat
+        core_obj.keyframe_insert(data_path="location", frame=f_hit + 5)
+        core_obj.keyframe_insert(data_path="rotation_quaternion", frame=f_hit + 5)
+        core_obj.location = base_pos
+        core_obj.rotation_quaternion = base_quat
+        core_obj.keyframe_insert(data_path="location", frame=f_hit + 9)
+        core_obj.keyframe_insert(data_path="rotation_quaternion", frame=f_hit + 9)
+        decay_frames = max(12, min(24, int(note_dur * fps * 1.1)))
+    elif anim_family in ("woodblock_clapper",):
+        snap_quat = (rot_mat @ Matrix.Rotation(math.radians(4.8 * vel_scale), 3, "X")).to_quaternion()
+        core_obj.location = base_pos - n * (0.020 * vel_scale)
+        core_obj.rotation_quaternion = snap_quat
+        core_obj.keyframe_insert(data_path="location", frame=f_hit + 1)
+        core_obj.keyframe_insert(data_path="rotation_quaternion", frame=f_hit + 1)
+        core_obj.location = base_pos
+        core_obj.rotation_quaternion = base_quat
+        core_obj.keyframe_insert(data_path="location", frame=f_hit + 5)
+        core_obj.keyframe_insert(data_path="rotation_quaternion", frame=f_hit + 5)
+        decay_frames = 8
+    elif anim_family in ("tubular_pendulum", "mallet_bars", "celesta_bars", "gong_pendulum", "steelpan_petals"):
+        core_obj.location = base_pos - n * (0.018 * vel_scale)
+        core_obj.keyframe_insert(data_path="location", frame=f_hit + 1)
+        core_obj.location = base_pos
+        core_obj.keyframe_insert(data_path="location", frame=f_hit + 7)
+        for k_off, deg in ((2, 3.0), (6, -1.9), (11, 1.0), (17, -0.4), (22, 0.0)):
+            sway_q = (rot_mat @ Matrix.Rotation(math.radians(deg * vel_scale), 3, "Y")).to_quaternion()
+            core_obj.rotation_quaternion = sway_q
+            core_obj.keyframe_insert(data_path="rotation_quaternion", frame=f_hit + k_off)
+        decay_frames = max(18, min(32, int(note_dur * fps * 1.4)))
+    elif anim_family in ("plucked_strings", "electric_guitar", "harp_strings", "mallet_strings", "kalimba_tines", "bowed_strings"):
+        for k_off, amp in ((1, -0.016), (3, 0.008), (5, -0.006), (7, 0.003), (10, -0.002), (12, 0.0)):
+            core_obj.location = base_pos + n * (amp * vel_scale)
+            core_obj.keyframe_insert(data_path="location", frame=f_hit + k_off)
+        decay_frames = max(14, min(26, int(note_dur * fps * 1.1)))
+    else:
+        core_obj.location = base_pos - n * (0.020 * vel_scale)
+        core_obj.keyframe_insert(data_path="location", frame=f_hit + 1)
+        core_obj.location = base_pos
+        core_obj.keyframe_insert(data_path="location", frame=f_hit + 7)
+        decay_frames = max(12, min(24, int(note_dur * fps * 1.0)))
+
+    # 2. Core Material Emission Pulse
+    bsdf = next(nd for nd in mat.node_tree.nodes if nd.type == "BSDF_PRINCIPLED")
+    keyframe_emission_pulse(
+        bsdf.inputs.get("Emission Strength"),
+        f_hit,
+        base_val=0.0,
+        peak_val=hit_glow * vel_scale * 1.45,
+        decay_frames=decay_frames,
+        bsdf=bsdf,
+        glow_color=glow_color,
+    )
+
+    # 3. Bespoke Sculpted v3.0 Sub-Part Kinetic Animations + Per-Part Glow
+    keys = _filter_parts(spawned_subs, "_WKey_", "_BKey_")
+    if anim_family in ("keyboard_hinge", "keyboard_pluck") and keys:
+        hero_key = _pick_pitch_matched_part(keys, pitch_frac)
+        if hero_key is not None:
+            piv = Vector((hero_key["orig_loc"].x, hero_key["orig_loc"].y + 0.045, hero_key["orig_loc"].z + 0.005))
+            keyframe_part_transform(hero_key, [
+                (f_hit - 1, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 1, (-7.2 * vel_scale, 0.0, 0.0), (0.0, 0.0, -0.014 * vel_scale), (1.0, 1.0, 1.0)),
+                (f_hit + 5, (0.8, 0.0, 0.0), (0.0, 0.0, 0.002), (1.0, 1.0, 1.0)),
+                (f_hit + 10, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ], pivot=piv)
+
+    bars = _filter_parts(spawned_subs, "_ToneBar_", "_SteelBar_")
+    if anim_family in ("mallet_bars", "celesta_bars") and bars:
+        hero_bar = _pick_pitch_matched_part(bars, pitch_frac)
+        if hero_bar is not None:
+            keyframe_part_transform(hero_bar, [
+                (f_hit - 1, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 1, (0.0, 0.0, 0.0), (0.0, 0.0, -0.015 * vel_scale), (1.0, 1.0, 1.0)),
+                (f_hit + 3, (0.0, 0.0, 0.0), (0.0, 0.0, 0.008 * vel_scale), (1.0, 1.0, 1.0)),
+                (f_hit + 6, (0.0, 0.0, 0.0), (0.0, 0.0, -0.004 * vel_scale), (1.0, 1.0, 1.0)),
+                (f_hit + 10, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ])
+
+    mallets = _filter_parts(spawned_subs, "_Mallet", "_MalletHead", "_MalletYarn", "_MalletBall", "_MalletFleece")
+    if mallets:
+        piv_m = Vector((0.0, 0.22, 0.14))
+        for mp in mallets:
+            keyframe_part_transform(mp, [
+                (f_hit - 3, (-14.0, 0.0, 0.0), (0.0, 0.0, 0.020), (1.0, 1.0, 1.0)),
+                (f_hit, (12.0 * vel_scale, 0.0, 0.0), (0.0, -0.025, -0.018), (1.0, 1.0, 1.0)),
+                (f_hit + 7, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ], pivot=piv_m)
+
+    if anim_family == "music_box":
+        for drum in _filter_parts(spawned_subs, "_PinDrum", "_GearWheel"):
+            keyframe_part_transform(drum, [
+                (f_hit - 1, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 12, (36.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ])
+        comb_tooth = _pick_pitch_matched_part(_filter_parts(spawned_subs, "_CombTooth_"), pitch_frac)
+        if comb_tooth:
+            keyframe_part_transform(comb_tooth, [
+                (f_hit, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 1, (-10.0, 0.0, 0.0), (0.0, 0.0, -0.010), (1.0, 1.0, 1.0)),
+                (f_hit + 4, (6.0, 0.0, 0.0), (0.0, 0.0, 0.005), (1.0, 1.0, 1.0)),
+                (f_hit + 9, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ])
+
+    if anim_family == "tubular_pendulum":
+        chimes = _filter_parts(spawned_subs, "_Chime", "_Tube")
+        hero_chime = _pick_pitch_matched_part(chimes, pitch_frac) or (chimes[0] if chimes else None)
+        if hero_chime:
+            piv_top = Vector((hero_chime["orig_loc"].x, hero_chime["orig_loc"].y, 0.28))
+            keyframe_part_transform(hero_chime, [
+                (f_hit, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 2, (4.8 * vel_scale, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 7, (-3.2 * vel_scale, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 14, (1.4 * vel_scale, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 22, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ], pivot=piv_top)
+
+    if anim_family == "bellows_accordion":
+        for bel in _filter_parts(spawned_subs, "_Bellow", "_Fold"):
+            keyframe_part_transform(bel, [
+                (f_hit - 1, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 2, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.78, 1.0, 1.05)),
+                (f_hit + 7, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.06, 1.0, 0.98)),
+                (f_hit + 13, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ])
+
+    if anim_family in ("plucked_strings", "electric_guitar", "harp_strings", "mallet_strings", "keyboard_pluck", "bowed_strings"):
+        strs = _filter_parts(spawned_subs, "_Str_", "_HarpStr_", "_PluckedStr", "_MelodyStr_", "_DroneStr_")
+        hero_str = _pick_pitch_matched_part(strs, pitch_frac) or (strs[0] if strs else None)
+        for sp in ([hero_str] if (hero_str and len(strs) > 2) else strs[:3]):
+            if sp is None:
+                continue
+            keyframe_part_transform(sp, [
+                (f_hit, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 1, (0.0, 0.0, 0.0), (0.0, -0.008 * vel_scale, 0.008 * vel_scale), (1.0, 1.0, 1.0)),
+                (f_hit + 3, (0.0, 0.0, 0.0), (0.0, 0.006 * vel_scale, -0.006 * vel_scale), (1.0, 1.0, 1.0)),
+                (f_hit + 5, (0.0, 0.0, 0.0), (0.0, -0.003 * vel_scale, 0.003 * vel_scale), (1.0, 1.0, 1.0)),
+                (f_hit + 9, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ])
+
+    if anim_family == "bowed_strings":
+        for bow in _filter_parts(spawned_subs, "_BowStick", "_BowHair", "_CelloBow", "_BassBow", "_GoldBow"):
+            keyframe_part_transform(bow, [
+                (f_hit - 2, (0.0, 0.0, 0.0), (-0.065, 0.0, -0.025), (1.0, 1.0, 1.0)),
+                (f_hit + 2, (0.0, 3.5, 0.0), (0.085 * vel_scale, 0.0, 0.032), (1.0, 1.0, 1.0)),
+                (f_hit + 8, (0.0, -2.5, 0.0), (-0.045, 0.0, -0.015), (1.0, 1.0, 1.0)),
+                (f_hit + 14, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ])
+
+    if anim_family == "gong_pendulum":
+        gong_piv = Vector((0.0, 0.25, 0.30))
+        for gp in _filter_parts(spawned_subs, "_GongDish", "_GongBoss"):
+            keyframe_part_transform(gp, [
+                (f_hit, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 2, (-7.5 * vel_scale, 0.0, 0.0), (0.0, 0.022, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 8, (5.2 * vel_scale, 0.0, 0.0), (0.0, -0.014, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 16, (-2.2 * vel_scale, 0.0, 0.0), (0.0, 0.006, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 24, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ], pivot=gong_piv)
+
+    if anim_family == "trombone_slide":
+        for sl in _filter_parts(spawned_subs, "_OuterSlide"):
+            keyframe_part_transform(sl, [
+                (f_hit - 1, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 2, (0.0, 0.0, 0.0), (-0.085 * vel_scale, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 8, (0.0, 0.0, 0.0), (0.018, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 13, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ])
+
+    if anim_family in ("brass_valves", "woodwind_keys", "brass_fan", "organ_drawbars"):
+        valves = _filter_parts(spawned_subs, "_Valve_", "_ValveCap_", "_Key_", "_Drawbar_")
+        if valves:
+            vpick = _pick_pitch_matched_part(valves, pitch_frac)
+            for vp in ([vpick] if vpick else valves[:2]):
+                dz = -0.022 * vel_scale if "_Valve" in vp["base_name"] else 0.0
+                dy = -0.014 if "_Key_" in vp["base_name"] else (-0.032 if "_Drawbar_" in vp["base_name"] else 0.0)
+                keyframe_part_transform(vp, [
+                    (f_hit - 1, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                    (f_hit + 1, (0.0, 0.0, 0.0), (0.0, dy, dz), (1.0, 1.0, 1.0)),
+                    (f_hit + 8, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                ])
+
+    if anim_family == "bagpipe_bag":
+        for bag in _filter_parts(spawned_subs, "_Bag"):
+            keyframe_part_transform(bag, [
+                (f_hit - 1, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 2, (0.0, 0.0, 0.0), (0.0, 0.012, 0.0), (0.94, 0.86, 0.94)),
+                (f_hit + 10, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ])
+
+    if anim_family == "steelpan_petals":
+        petal = _pick_pitch_matched_part(_filter_parts(spawned_subs, "_Petal_"), pitch_frac)
+        if petal:
+            keyframe_part_transform(petal, [
+                (f_hit, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 1, (0.0, 0.0, 0.0), (0.0, 0.008, 0.0), (1.16, 1.16, 1.16)),
+                (f_hit + 8, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ])
+
+    if anim_family in ("synth_euclid", "synth_saw", "synth_pad"):
+        for wp in _filter_parts(spawned_subs, "_SqStep_", "_SawRamp_", "_PadOuter", "_PadInner", "_PadCore"):
+            peak_sc = 1.0 + 0.16 * vel_scale
+            keyframe_part_transform(wp, [
+                (f_hit - 1, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 1, (0.0, 0.0, 0.0), (0.0, -0.006, 0.0), (peak_sc, 1.0, peak_sc)),
+                (f_hit + 10, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ])
+        for wh in _filter_parts(spawned_subs, "_PitchWheel", "_ModWheel"):
+            keyframe_part_transform(wh, [
+                (f_hit - 1, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 1, (-18.0 * vel_scale, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+                (f_hit + 9, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+            ])
+
+    # 4. Per-Part Selective Emissive Pulse (VU LED ladder scaled by velocity + active part glow)
+    vu_parts = sorted(_filter_parts(spawned_subs, "_VU_"), key=lambda p: p["orig_loc"].z)
+    vu_lit = max(1, int(round(len(vu_parts) * min(1.0, vel_scale * 0.85)))) if vu_parts else 0
+    for idx_v, vp in enumerate(vu_parts):
+        esock = vp.get("em_sock")
+        if esock is None:
+            continue
+        if idx_v < vu_lit:
+            keyframe_emission_pulse(esock, f_hit, base_val=0.8, peak_val=7.5 * vel_scale, decay_frames=12)
+        else:
+            keyframe_emission_pulse(esock, f_hit, base_val=0.15, peak_val=0.35, decay_frames=6)
+
+    for sp in spawned_subs:
+        if "_VU_" in sp["base_name"]:
+            continue
+        esock = sp.get("em_sock")
+        if esock is None:
+            continue
+        base_em = sp.get("base_em", 0.0)
+        peak_em = max(base_em + 1.5, hit_glow * vel_scale * (1.8 if "led" in sp.get("mat_name", "").lower() else 1.15))
+        keyframe_emission_pulse(
+            esock,
+            f_hit,
+            base_val=base_em,
+            peak_val=peak_em,
+            decay_frames=decay_frames,
+            bsdf=sp.get("bsdf"),
+            glow_color=glow_color if base_em < 0.5 else None,
+        )
+
+
+def spawn_instrument_board(
+    board: dict,
+    templates: dict[int, dict],
+    lib_mats: dict[str, bpy.types.Material],
+    manifest: dict,
+    b_col: bpy.types.Collection,
+    col_fx: bpy.types.Collection,
+    ring_mesh: bpy.types.Mesh,
+    notes_meta: list[dict],
+    fps: int,
+) -> tuple[bpy.types.Object, list[dict]]:
+    """Instantiate core collision bar + sculpted v3.0 assembly & keyframe its hit response."""
+    idx = int(board["index"])
+    gm = resolve_board_gm_program(board, manifest)
+    tpl = templates.get(gm) or templates.get(-1000 - int(board.get("track_idx", 1))) or next(iter(templates.values()))
+    anim_family = str(tpl.get("anim_family", "generic_strike"))
+
+    core_mesh = create_hard_beveled_box(
+        f"BoardMesh_{idx:03d}", float(board["length"]), float(board["width_y"]), float(board["thickness"])
+    )
+    inst_label = str(board.get("instrument", tpl.get("name", "Instrument"))).replace(" ", "")
+    obj = bpy.data.objects.new(f"Board_{idx:03d}_{inst_label}_{board.get('pitch_name', '')}", core_mesh)
+    b_col.objects.link(obj)
+
+    mat, glow_color, hit_glow = get_board_material_and_glow(board, lib_mats, templates=templates, manifest=manifest)
+    mat.name = f"BoardMat_{idx:03d}"
+    obj.data.materials.clear()
+    obj.data.materials.append(mat)
+
+    spawned_subs: list[dict] = []
+    # Keep object-linked highlight copies per board so emissive hit pulses stay localized to THIS board
+    local_glow_cache: dict[str, tuple[bpy.types.Material, object, object, float]] = {}
+
+    for sub_name, sub_data, sub_mats, sub_loc, sub_rot, sub_scale in tpl["subs"]:
+        sobj = bpy.data.objects.new(f"{sub_name}_{idx:03d}", sub_data)
+        b_col.objects.link(sobj)
+        sobj.parent = obj
+        sobj.location = sub_loc
+        sobj.rotation_mode = "XYZ"
+        sobj.rotation_euler = sub_rot
+        sobj.scale = sub_scale
+
+        # Preserve full multi-material slots from v3.0 asset
+        if not sobj.data.materials and sub_mats:
+            for sm in sub_mats:
+                sobj.data.materials.append(sm)
+
+        em_sock = None
+        bsdf_sub = None
+        base_em = 0.0
+        mat_name = sub_mats[0].name if sub_mats else ""
+
+        if _should_highlight_part(sub_name, anim_family) and sub_mats and len(sobj.material_slots) > 0:
+            orig_m = sub_mats[0]
+            cache_key = f"{orig_m.name}|{'VU' if '_VU_' in sub_name else 'GEN'}"
+            if "_VU_" in sub_name or cache_key not in local_glow_cache:
+                m_copy = orig_m.copy()
+                m_copy.name = f"PartGlow_{idx:03d}_{len(local_glow_cache):02d}"
+                bsdf_c = next((nd for nd in m_copy.node_tree.nodes if nd.type == "BSDF_PRINCIPLED"), None)
+                esock_c = bsdf_c.inputs.get("Emission Strength") if bsdf_c else None
+                b_em = float(esock_c.default_value) if esock_c is not None else 0.0
+                if "_VU_" in sub_name and esock_c is not None:
+                    b_em = 0.15 if idx >= 0 else b_em
+                local_glow_cache[cache_key] = (m_copy, bsdf_c, esock_c, b_em)
+            m_copy, bsdf_sub, em_sock, base_em = local_glow_cache[cache_key]
+            sobj.material_slots[0].link = "OBJECT"
+            sobj.material_slots[0].material = m_copy
+
+        spawned_subs.append({
+            "obj": sobj,
+            "base_name": sub_name,
+            "orig_loc": sub_loc.copy(),
+            "orig_rot": sub_rot.copy(),
+            "orig_scale": sub_scale.copy(),
+            "bsdf": bsdf_sub,
+            "em_sock": em_sock,
+            "base_em": base_em,
+            "mat_name": mat_name,
+        })
+
+    u = Vector(board["axis_u"]).normalized()
+    v = Vector(board["axis_v"]).normalized()
+    n = Vector(board["axis_n"]).normalized()
+    rot_mat = Matrix((
+        (u.x, v.x, n.x),
+        (u.y, v.y, n.y),
+        (u.z, v.z, n.z),
+    ))
+    obj.location = Vector(board["center"])
+    obj.rotation_mode = "QUATERNION"
+    obj.rotation_quaternion = rot_mat.to_quaternion()
+
+    f_hit = int(board["frame_hit"])
+    n_meta = notes_meta[idx] if idx < len(notes_meta) else {}
+    vel = float(board.get("velocity", n_meta.get("velocity", 100.0)))
+    note_dur = float(board.get("duration", n_meta.get("duration", 0.25)))
+    vel_scale = 0.55 + 0.65 * max(0.0, min(1.0, vel / 127.0))
+
+    animate_instrument_hit(
+        obj,
+        spawned_subs,
+        board,
+        mat,
+        glow_color,
+        hit_glow,
+        anim_family,
+        vel_scale,
+        note_dur,
+        fps,
+        rot_mat,
+    )
+    _create_shockwave_ring(
+        col_fx,
+        ring_mesh,
+        idx,
+        Vector(board["contact"]),
+        rot_mat,
+        glow_color,
+        f_hit,
+        vel_scale,
+    )
+    return obj, spawned_subs
+
+
 # -------------------- Main Scene Builder --------------------
 
 def build_scene(
@@ -677,6 +1383,7 @@ def build_scene(
     frames_dir: str | None = None,
     audio_path: str | None = None,
     lib_blend: str = DEFAULT_LIB_BLEND,
+    manifest_json: str = DEFAULT_MANIFEST_JSON,
     max_frame: int | None = None,
 ):
     with open(physics_json, "r", encoding="utf-8") as f:
@@ -688,15 +1395,16 @@ def build_scene(
     scene = bpy.context.scene
     col = scene.collection
 
-    # Load reusable Instrument Asset Library (.blend)
-    templates, lib_mats = load_instrument_library(lib_blend)
+    # Load reusable 64-Instrument Asset Library (.blend + manifest)
+    templates, lib_mats, manifest = load_instrument_library(lib_blend, manifest_json)
 
     fps = int(plan["fps"])
     total_frames = int(plan["total_frames"])
     if max_frame is not None and max_frame > 0:
         total_frames = min(total_frames, int(max_frame))
     radius = float(plan["marble_radius"])
-    wall_y = float(plan["back_wall_y"])
+    # Deep v3.0 sculptures reach Y ~ +0.58; push back wall & spine safely behind them
+    wall_y = max(float(plan.get("back_wall_y", 0.52)), 0.78)
     boards = plan["boards"]
     rails = plan["rails"]
     samples = [s for s in plan["samples"] if int(s["frame"]) <= total_frames]
@@ -780,8 +1488,23 @@ def build_scene(
         phrase_breaks_z=phrase_breaks_z,
     )
 
-    # Modular Phrase Mounting Spines (midground Y=0.34) creating 3 clear depth layers
-    spine_y = 0.34
+    if samples and boards:
+        brand_x = 0.5 * (float(samples[0]["position"][0]) + float(boards[0]["center"][0]))
+        brand_z = float(samples[0]["position"][2]) + 0.34
+    else:
+        brand_x = 0.0
+        brand_z = max(all_z) + 0.35
+    create_opening_3d_brand_text(
+        brand_x,
+        wall_y,
+        brand_z,
+        brass_trim_mat,
+        wood_slat_mat,
+        col_stage,
+    )
+
+    # Modular Phrase Mounting Spines pushed cleanly behind v3.0 assemblies
+    spine_y = wall_y - 0.14
     phrase_clusters = build_phrase_clusters(boards, max_cluster=6)
     brass_accent_mat = lib_mats["LibMat_WallBrassTrim"]
     board_to_spine_x = create_modular_phrase_racks(
@@ -832,169 +1555,28 @@ def build_scene(
     ring_mesh.materials.append(None)
     track_cols: dict[int, bpy.types.Collection] = {}
 
-    # 1. Instantiate Boards + Acoustic Sub-Assemblies from Instrument Asset Library
+    # 1. Instantiate Boards + v3.0 Sculpted Sub-Assemblies with Per-Part Hit Animations
     for b in boards:
-        idx = b["index"]
+        idx = int(b["index"])
         t_idx = int(b["track_idx"])
         if t_idx not in track_cols:
             inst_clean = str(b["instrument"]).replace(" ", "")
             track_cols[t_idx] = get_or_create_collection(f"Track_{t_idx:02d}_{inst_clean}", col_instruments)
         b_col = track_cols[t_idx]
 
-        tpl = templates[t_idx]
-        core_mesh = create_hard_beveled_box(
-            f"BoardMesh_{idx:03d}", float(b["length"]), float(b["width_y"]), float(b["thickness"])
+        spawn_instrument_board(
+            b,
+            templates,
+            lib_mats,
+            manifest,
+            b_col,
+            col_fx,
+            ring_mesh,
+            notes_meta,
+            fps,
         )
 
-        obj = bpy.data.objects.new(f"Board_{idx:03d}_{b['instrument']}_{b['pitch_name']}", core_mesh)
-        b_col.objects.link(obj)
-
-        mat, glow_color, hit_glow = get_board_material_and_glow(b, lib_mats)
-        mat.name = f"BoardMat_{idx:03d}"
-        obj.data.materials.clear()
-        obj.data.materials.append(mat)
-
-        # Attach sculpted acoustic sub-assembly cleanly behind Y >= +0.125 (shares mesh datablocks)
-        for sub_name, sub_mesh, sub_mats in tpl["subs"]:
-            sobj = bpy.data.objects.new(f"{sub_name}_{idx:03d}", sub_mesh)
-            b_col.objects.link(sobj)
-            sobj.parent = obj
-            if not sobj.data.materials and sub_mats:
-                sobj.data.materials.append(sub_mats[0])
-
-        u = Vector(b["axis_u"]).normalized()
-        v = Vector(b["axis_v"]).normalized()
-        n = Vector(b["axis_n"]).normalized()
-        rot_mat = Matrix((
-            (u.x, v.x, n.x),
-            (u.y, v.y, n.y),
-            (u.z, v.z, n.z),
-        ))
-        base_pos = Vector(b["center"])
-        obj.location = base_pos
-        obj.rotation_mode = "QUATERNION"
-        obj.rotation_quaternion = rot_mat.to_quaternion()
-
-        # Differentiated per-instrument hit feedback coupled with MIDI velocity & duration
-        f_hit = int(b["frame_hit"])
-        n_meta = notes_meta[idx] if idx < len(notes_meta) else {}
-        vel = float(n_meta.get("velocity", 100.0))
-        note_dur = float(n_meta.get("duration", 0.25))
-        vel_scale = 0.55 + 0.65 * max(0.0, min(1.0, vel / 127.0))
-
-        bsdf = next(nd for nd in mat.node_tree.nodes if nd.type == "BSDF_PRINCIPLED")
-        set_socket(bsdf, "Emission Color", (*glow_color, 1.0))
-        em_sock = bsdf.inputs["Emission Strength"]
-
-        base_quat = rot_mat.to_quaternion()
-        obj.keyframe_insert(data_path="location", frame=max(0, f_hit))
-        obj.keyframe_insert(data_path="rotation_quaternion", frame=max(0, f_hit))
-
-        if t_idx == 2:
-            # Piano: snappy 1-frame key-press downward from rear hinge + spring return
-            press_quat = (rot_mat @ Matrix.Rotation(math.radians(6.2), 3, "X")).to_quaternion()
-            rebound_quat = (rot_mat @ Matrix.Rotation(math.radians(-0.8), 3, "X")).to_quaternion()
-            obj.location = base_pos - n * 0.015
-            obj.rotation_quaternion = press_quat
-            obj.keyframe_insert(data_path="location", frame=f_hit + 1)
-            obj.keyframe_insert(data_path="rotation_quaternion", frame=f_hit + 1)
-            obj.location = base_pos + n * 0.002
-            obj.rotation_quaternion = rebound_quat
-            obj.keyframe_insert(data_path="location", frame=f_hit + 5)
-            obj.keyframe_insert(data_path="rotation_quaternion", frame=f_hit + 5)
-            obj.location = base_pos
-            obj.rotation_quaternion = base_quat
-            obj.keyframe_insert(data_path="location", frame=f_hit + 9)
-            obj.keyframe_insert(data_path="rotation_quaternion", frame=f_hit + 9)
-            decay_frames = max(12, min(22, int(note_dur * fps * 1.0)))
-        elif t_idx == 1:
-            # Castanets: ultra-snappy 1-frame clapper snap
-            snap_quat = (rot_mat @ Matrix.Rotation(math.radians(4.5), 3, "X")).to_quaternion()
-            obj.location = base_pos - n * 0.020
-            obj.rotation_quaternion = snap_quat
-            obj.keyframe_insert(data_path="location", frame=f_hit + 1)
-            obj.keyframe_insert(data_path="rotation_quaternion", frame=f_hit + 1)
-            obj.location = base_pos
-            obj.rotation_quaternion = base_quat
-            obj.keyframe_insert(data_path="location", frame=f_hit + 5)
-            obj.keyframe_insert(data_path="rotation_quaternion", frame=f_hit + 5)
-            decay_frames = 8
-        elif t_idx in (3, 4, 10):
-            # Tubular Bells / Vibraphone / Glockenspiel: punchy strike + damped pendulum sway
-            obj.location = base_pos - n * 0.018
-            obj.keyframe_insert(data_path="location", frame=f_hit + 1)
-            obj.location = base_pos
-            obj.keyframe_insert(data_path="location", frame=f_hit + 7)
-            for k_off, deg in ((2, 3.0), (6, -1.9), (11, 1.0), (17, -0.4), (22, 0.0)):
-                sway_q = (rot_mat @ Matrix.Rotation(math.radians(deg), 3, "Y")).to_quaternion()
-                obj.rotation_quaternion = sway_q
-                obj.keyframe_insert(data_path="rotation_quaternion", frame=f_hit + k_off)
-            decay_frames = max(18, min(32, int(note_dur * fps * 1.4)))
-        elif t_idx in (6, 12):
-            # Guitar / Kalimba: rapid plucked string micro-vibration
-            for k_off, amp in ((1, -0.016), (3, 0.008), (5, -0.006), (7, 0.003), (10, -0.002), (12, 0.0)):
-                obj.location = base_pos + n * amp
-                obj.keyframe_insert(data_path="location", frame=f_hit + k_off)
-            decay_frames = max(14, min(26, int(note_dur * fps * 1.1)))
-        else:
-            obj.location = base_pos - n * 0.022
-            obj.keyframe_insert(data_path="location", frame=f_hit + 1)
-            obj.location = base_pos
-            obj.keyframe_insert(data_path="location", frame=f_hit + 7)
-            decay_frames = max(12, min(22, int(note_dur * fps * 1.0)))
-
-        scaled_glow = hit_glow * vel_scale
-        em_sock.default_value = 0.0
-        em_sock.keyframe_insert(data_path="default_value", frame=max(0, f_hit - 1))
-        em_sock.default_value = scaled_glow * 1.45
-        em_sock.keyframe_insert(data_path="default_value", frame=f_hit)
-        em_sock.default_value = scaled_glow * 0.48
-        em_sock.keyframe_insert(data_path="default_value", frame=f_hit + 2)
-        em_sock.default_value = 0.0
-        em_sock.keyframe_insert(data_path="default_value", frame=f_hit + decay_frames)
-
-        # Tight, punchy 5-frame contact spark ring right on the impact point
-        ring_obj = bpy.data.objects.new(f"ImpactRing_{idx:03d}", ring_mesh)
-        col_fx.objects.link(ring_obj)
-        rmat, r_em = make_shockwave_material(f"RingMat_{idx:03d}", glow_color)
-        ring_obj.material_slots[0].link = "OBJECT"
-        ring_obj.material_slots[0].material = rmat
-
-        ring_obj.location = Vector(b["contact"]) + n * 0.006
-        ring_obj.rotation_mode = "QUATERNION"
-        ring_obj.rotation_quaternion = rot_mat.to_quaternion()
-
-        ring_obj.hide_viewport = True
-        ring_obj.hide_render = True
-        ring_obj.scale = (0.35, 0.35, 0.35)
-        ring_obj.keyframe_insert(data_path="hide_viewport", frame=max(0, f_hit - 1))
-        ring_obj.keyframe_insert(data_path="hide_render", frame=max(0, f_hit - 1))
-        ring_obj.keyframe_insert(data_path="scale", frame=max(0, f_hit - 1))
-
-        ring_obj.hide_viewport = False
-        ring_obj.hide_render = False
-        ring_obj.scale = (0.42, 0.42, 0.42)
-        ring_obj.keyframe_insert(data_path="hide_viewport", frame=f_hit)
-        ring_obj.keyframe_insert(data_path="hide_render", frame=f_hit)
-        ring_obj.keyframe_insert(data_path="scale", frame=f_hit)
-
-        ring_obj.scale = (1.42, 1.42, 1.42)
-        ring_obj.keyframe_insert(data_path="scale", frame=f_hit + 5)
-
-        ring_obj.hide_viewport = True
-        ring_obj.hide_render = True
-        ring_obj.keyframe_insert(data_path="hide_viewport", frame=f_hit + 6)
-        ring_obj.keyframe_insert(data_path="hide_render", frame=f_hit + 6)
-
-        r_em_sock = r_em.inputs["Strength"]
-        r_em_sock.default_value = 0.0
-        r_em_sock.keyframe_insert(data_path="default_value", frame=max(0, f_hit - 1))
-        r_em_sock.default_value = 8.5 * vel_scale
-        r_em_sock.keyframe_insert(data_path="default_value", frame=f_hit)
-        r_em_sock.default_value = 0.0
-        r_em_sock.keyframe_insert(data_path="default_value", frame=f_hit + 5)
-
-        # Connect board mounting pins cleanly into the midground modular spine rack (Y=spine_y)
+        # Connect board mounting pins cleanly into the midground modular spine rack
         sx = board_to_spine_x.get(idx, b["center"][0])
         for p_idx, pin in enumerate(b["pins"]):
             spine_anchor = (sx, spine_y, pin["a"][2])

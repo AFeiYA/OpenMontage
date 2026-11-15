@@ -4,8 +4,11 @@
 # The first non-ignored line should be the version indicator.
 VERSION 1
 
-a1b2c3d4-1111-4000-8000-000000000001:Instruments/Percussion:Percussion
-a1b2c3d4-1111-4000-8000-000000000002:Instruments/Keyboards & Bells:Keyboards-Bells
-a1b2c3d4-1111-4000-8000-000000000003:Instruments/Melodic & Pluck:Melodic-Pluck
+a1b2c3d4-1111-4000-8000-000000000001:Instruments/Percussion & World:Percussion
+a1b2c3d4-1111-4000-8000-000000000002:Instruments/Keyboards & Mallets:Keyboards-Mallets
+a1b2c3d4-1111-4000-8000-000000000003:Instruments/Organs, Guitars & Harp:Melodic-Pluck
 a1b2c3d4-1111-4000-8000-000000000004:Materials/Studio PBR:Studio-PBR
 a1b2c3d4-1111-4000-8000-000000000005:Stage & Hardware:Stage-Hardware
+a1b2c3d4-1111-4000-8000-000000000006:Instruments/Strings & Choir:Strings-Choir
+a1b2c3d4-1111-4000-8000-000000000007:Instruments/Brass & Saxophones:Brass-Saxophones
+a1b2c3d4-1111-4000-8000-000000000008:Instruments/Woodwinds & Flutes:Woodwinds-Flutes

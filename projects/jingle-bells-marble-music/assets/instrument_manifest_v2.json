@@ -1,0 +1,1030 @@
+{
+  "version": "3.0",
+  "total_instruments": 64,
+  "by_program": {
+    "0": {
+      "index": 1,
+      "gm_program": 0,
+      "name": "Acoustic Grand Piano",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "collection": "Lib_01_GM000_Acoustic_Grand_Piano",
+      "variant": "grand",
+      "anim_family": "keyboard_hinge",
+      "glow_color": [
+        0.72,
+        0.94,
+        1.0
+      ],
+      "part_count": 37
+    },
+    "2": {
+      "index": 2,
+      "gm_program": 2,
+      "name": "Electric Grand Piano",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "collection": "Lib_02_GM002_Electric_Grand_Piano",
+      "variant": "egrand",
+      "anim_family": "keyboard_hinge",
+      "glow_color": [
+        0.62,
+        0.88,
+        1.0
+      ],
+      "part_count": 37
+    },
+    "4": {
+      "index": 3,
+      "gm_program": 4,
+      "name": "Electric Piano",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "collection": "Lib_03_GM004_Electric_Piano",
+      "variant": "epiano",
+      "anim_family": "keyboard_hinge",
+      "glow_color": [
+        0.48,
+        0.86,
+        1.0
+      ],
+      "part_count": 35
+    },
+    "6": {
+      "index": 4,
+      "gm_program": 6,
+      "name": "Harpsichord",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "collection": "Lib_04_GM006_Harpsichord",
+      "variant": "harpsichord",
+      "anim_family": "keyboard_pluck",
+      "glow_color": [
+        1.0,
+        0.78,
+        0.34
+      ],
+      "part_count": 59
+    },
+    "8": {
+      "index": 5,
+      "gm_program": 8,
+      "name": "Celesta",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "collection": "Lib_05_GM008_Celesta",
+      "variant": "celesta",
+      "anim_family": "celesta_bars",
+      "glow_color": [
+        0.76,
+        0.96,
+        1.0
+      ],
+      "part_count": 35
+    },
+    "9": {
+      "index": 6,
+      "gm_program": 9,
+      "name": "Glockenspiel",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "collection": "Lib_06_GM009_Glockenspiel",
+      "variant": "glock",
+      "anim_family": "mallet_bars",
+      "glow_color": [
+        0.82,
+        0.96,
+        1.0
+      ],
+      "part_count": 36
+    },
+    "10": {
+      "index": 7,
+      "gm_program": 10,
+      "name": "Music Box",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "collection": "Lib_07_GM010_Music_Box",
+      "variant": "musicbox",
+      "anim_family": "music_box",
+      "glow_color": [
+        1.0,
+        0.84,
+        0.42
+      ],
+      "part_count": 22
+    },
+    "11": {
+      "index": 8,
+      "gm_program": 11,
+      "name": "Vibraphone",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "collection": "Lib_08_GM011_Vibraphone",
+      "variant": "vibe",
+      "anim_family": "mallet_bars",
+      "glow_color": [
+        0.48,
+        0.88,
+        1.0
+      ],
+      "part_count": 22
+    },
+    "12": {
+      "index": 9,
+      "gm_program": 12,
+      "name": "Marimba",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "collection": "Lib_09_GM012_Marimba",
+      "variant": "marimba",
+      "anim_family": "mallet_bars",
+      "glow_color": [
+        1.0,
+        0.5,
+        0.22
+      ],
+      "part_count": 23
+    },
+    "13": {
+      "index": 10,
+      "gm_program": 13,
+      "name": "Xylophone",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "collection": "Lib_10_GM013_Xylophone",
+      "variant": "xylo",
+      "anim_family": "mallet_bars",
+      "glow_color": [
+        1.0,
+        0.76,
+        0.24
+      ],
+      "part_count": 20
+    },
+    "14": {
+      "index": 11,
+      "gm_program": 14,
+      "name": "Tubular Bells",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "collection": "Lib_11_GM014_Tubular_Bells",
+      "variant": "bells",
+      "anim_family": "tubular_pendulum",
+      "glow_color": [
+        1.0,
+        0.84,
+        0.32
+      ],
+      "part_count": 21
+    },
+    "15": {
+      "index": 12,
+      "gm_program": 15,
+      "name": "Dulcimer",
+      "family_idx": 1,
+      "family_name": "Pianos & Mallets",
+      "collection": "Lib_12_GM015_Dulcimer",
+      "variant": "dulcimer",
+      "anim_family": "mallet_strings",
+      "glow_color": [
+        0.98,
+        0.72,
+        0.3
+      ],
+      "part_count": 18
+    },
+    "16": {
+      "index": 13,
+      "gm_program": 16,
+      "name": "Drawbar Organ",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "collection": "Lib_13_GM016_Drawbar_Organ",
+      "variant": "drawbar",
+      "anim_family": "organ_drawbars",
+      "glow_color": [
+        1.0,
+        0.62,
+        0.24
+      ],
+      "part_count": 73
+    },
+    "19": {
+      "index": 14,
+      "gm_program": 19,
+      "name": "Church Organ",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "collection": "Lib_14_GM019_Church_Organ",
+      "variant": "church",
+      "anim_family": "organ_pipes",
+      "glow_color": [
+        0.96,
+        0.8,
+        0.42
+      ],
+      "part_count": 58
+    },
+    "21": {
+      "index": 15,
+      "gm_program": 21,
+      "name": "Accordion",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "collection": "Lib_15_GM021_Accordion",
+      "variant": "accordion",
+      "anim_family": "bellows_accordion",
+      "glow_color": [
+        0.95,
+        0.38,
+        0.28
+      ],
+      "part_count": 57
+    },
+    "22": {
+      "index": 16,
+      "gm_program": 22,
+      "name": "Harmonica",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "collection": "Lib_16_GM022_Harmonica",
+      "variant": "harmonica",
+      "anim_family": "reed_plates",
+      "glow_color": [
+        0.78,
+        0.94,
+        1.0
+      ],
+      "part_count": 20
+    },
+    "24": {
+      "index": 17,
+      "gm_program": 24,
+      "name": "Nylon Guitar",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "collection": "Lib_17_GM024_Nylon_Guitar",
+      "variant": "nylon",
+      "anim_family": "plucked_strings",
+      "glow_color": [
+        1.0,
+        0.74,
+        0.28
+      ],
+      "part_count": 31
+    },
+    "25": {
+      "index": 18,
+      "gm_program": 25,
+      "name": "Steel Guitar",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "collection": "Lib_18_GM025_Steel_Guitar",
+      "variant": "steel",
+      "anim_family": "plucked_strings",
+      "glow_color": [
+        1.0,
+        0.66,
+        0.24
+      ],
+      "part_count": 31
+    },
+    "27": {
+      "index": 19,
+      "gm_program": 27,
+      "name": "Clean Electric Guitar",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "collection": "Lib_19_GM027_Clean_Electric_Guitar",
+      "variant": "clean_e",
+      "anim_family": "electric_guitar",
+      "glow_color": [
+        0.42,
+        0.86,
+        1.0
+      ],
+      "part_count": 35
+    },
+    "30": {
+      "index": 20,
+      "gm_program": 30,
+      "name": "Distortion Guitar",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "collection": "Lib_20_GM030_Distortion_Guitar",
+      "variant": "dist_e",
+      "anim_family": "electric_guitar",
+      "glow_color": [
+        1.0,
+        0.26,
+        0.18
+      ],
+      "part_count": 31
+    },
+    "32": {
+      "index": 21,
+      "gm_program": 32,
+      "name": "Acoustic Bass",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "collection": "Lib_21_GM032_Acoustic_Bass",
+      "variant": "abass",
+      "anim_family": "plucked_strings",
+      "glow_color": [
+        0.96,
+        0.58,
+        0.22
+      ],
+      "part_count": 26
+    },
+    "35": {
+      "index": 22,
+      "gm_program": 35,
+      "name": "Fretless Bass",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "collection": "Lib_22_GM035_Fretless_Bass",
+      "variant": "fbass",
+      "anim_family": "electric_guitar",
+      "glow_color": [
+        0.85,
+        0.46,
+        0.2
+      ],
+      "part_count": 21
+    },
+    "45": {
+      "index": 23,
+      "gm_program": 45,
+      "name": "Pizzicato Strings",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "collection": "Lib_23_GM045_Pizzicato_Strings",
+      "variant": "pizz",
+      "anim_family": "plucked_strings",
+      "glow_color": [
+        0.98,
+        0.72,
+        0.34
+      ],
+      "part_count": 16
+    },
+    "46": {
+      "index": 24,
+      "gm_program": 46,
+      "name": "Orchestral Harp",
+      "family_idx": 2,
+      "family_name": "Organs, Guitars & Harp",
+      "collection": "Lib_24_GM046_Orchestral_Harp",
+      "variant": "harp",
+      "anim_family": "harp_strings",
+      "glow_color": [
+        1.0,
+        0.84,
+        0.4
+      ],
+      "part_count": 20
+    },
+    "40": {
+      "index": 25,
+      "gm_program": 40,
+      "name": "Violin",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "collection": "Lib_25_GM040_Violin",
+      "variant": "violin",
+      "anim_family": "bowed_strings",
+      "glow_color": [
+        1.0,
+        0.62,
+        0.24
+      ],
+      "part_count": 18
+    },
+    "41": {
+      "index": 26,
+      "gm_program": 41,
+      "name": "Viola",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "collection": "Lib_26_GM041_Viola",
+      "variant": "viola",
+      "anim_family": "bowed_strings",
+      "glow_color": [
+        0.96,
+        0.52,
+        0.22
+      ],
+      "part_count": 18
+    },
+    "42": {
+      "index": 27,
+      "gm_program": 42,
+      "name": "Cello",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "collection": "Lib_27_GM042_Cello",
+      "variant": "cello",
+      "anim_family": "bowed_strings",
+      "glow_color": [
+        0.92,
+        0.44,
+        0.18
+      ],
+      "part_count": 17
+    },
+    "43": {
+      "index": 28,
+      "gm_program": 43,
+      "name": "Contrabass",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "collection": "Lib_28_GM043_Contrabass",
+      "variant": "bass",
+      "anim_family": "bowed_strings",
+      "glow_color": [
+        0.86,
+        0.36,
+        0.16
+      ],
+      "part_count": 21
+    },
+    "48": {
+      "index": 29,
+      "gm_program": 48,
+      "name": "String Ensemble",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "collection": "Lib_29_GM048_String_Ensemble",
+      "variant": "ensemble",
+      "anim_family": "bowed_strings",
+      "glow_color": [
+        1.0,
+        0.74,
+        0.32
+      ],
+      "part_count": 45
+    },
+    "52": {
+      "index": 30,
+      "gm_program": 52,
+      "name": "Choir Aahs",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "collection": "Lib_30_GM052_Choir_Aahs",
+      "variant": "choir_a",
+      "anim_family": "choir_pipes",
+      "glow_color": [
+        0.64,
+        0.9,
+        1.0
+      ],
+      "part_count": 16
+    },
+    "53": {
+      "index": 31,
+      "gm_program": 53,
+      "name": "Voice Oohs",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "collection": "Lib_31_GM053_Voice_Oohs",
+      "variant": "choir_o",
+      "anim_family": "choir_pipes",
+      "glow_color": [
+        0.76,
+        0.82,
+        1.0
+      ],
+      "part_count": 15
+    },
+    "55": {
+      "index": 32,
+      "gm_program": 55,
+      "name": "Orchestra Hit",
+      "family_idx": 3,
+      "family_name": "Strings & Choir",
+      "collection": "Lib_32_GM055_Orchestra_Hit",
+      "variant": "orch_hit",
+      "anim_family": "gong_pendulum",
+      "glow_color": [
+        1.0,
+        0.68,
+        0.22
+      ],
+      "part_count": 12
+    },
+    "56": {
+      "index": 33,
+      "gm_program": 56,
+      "name": "Trumpet",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "collection": "Lib_33_GM056_Trumpet",
+      "variant": "trumpet",
+      "anim_family": "brass_valves",
+      "glow_color": [
+        1.0,
+        0.82,
+        0.28
+      ],
+      "part_count": 12
+    },
+    "57": {
+      "index": 34,
+      "gm_program": 57,
+      "name": "Trombone",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "collection": "Lib_34_GM057_Trombone",
+      "variant": "trombone",
+      "anim_family": "trombone_slide",
+      "glow_color": [
+        1.0,
+        0.76,
+        0.26
+      ],
+      "part_count": 9
+    },
+    "58": {
+      "index": 35,
+      "gm_program": 58,
+      "name": "Tuba",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "collection": "Lib_35_GM058_Tuba",
+      "variant": "tuba",
+      "anim_family": "brass_valves",
+      "glow_color": [
+        0.96,
+        0.7,
+        0.24
+      ],
+      "part_count": 10
+    },
+    "59": {
+      "index": 36,
+      "gm_program": 59,
+      "name": "Muted Trumpet",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "collection": "Lib_36_GM059_Muted_Trumpet",
+      "variant": "muted_tpt",
+      "anim_family": "brass_valves",
+      "glow_color": [
+        1.0,
+        0.54,
+        0.24
+      ],
+      "part_count": 9
+    },
+    "60": {
+      "index": 37,
+      "gm_program": 60,
+      "name": "French Horn",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "collection": "Lib_37_GM060_French_Horn",
+      "variant": "horn",
+      "anim_family": "brass_valves",
+      "glow_color": [
+        1.0,
+        0.8,
+        0.32
+      ],
+      "part_count": 8
+    },
+    "61": {
+      "index": 38,
+      "gm_program": 61,
+      "name": "Brass Section",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "collection": "Lib_38_GM061_Brass_Section",
+      "variant": "brass_sec",
+      "anim_family": "brass_fan",
+      "glow_color": [
+        1.0,
+        0.82,
+        0.34
+      ],
+      "part_count": 10
+    },
+    "64": {
+      "index": 39,
+      "gm_program": 64,
+      "name": "Soprano Sax",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "collection": "Lib_39_GM064_Soprano_Sax",
+      "variant": "soprano_sax",
+      "anim_family": "woodwind_keys",
+      "glow_color": [
+        1.0,
+        0.8,
+        0.34
+      ],
+      "part_count": 12
+    },
+    "65": {
+      "index": 40,
+      "gm_program": 65,
+      "name": "Alto Sax",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "collection": "Lib_40_GM065_Alto_Sax",
+      "variant": "alto_sax",
+      "anim_family": "woodwind_keys",
+      "glow_color": [
+        1.0,
+        0.78,
+        0.3
+      ],
+      "part_count": 10
+    },
+    "66": {
+      "index": 41,
+      "gm_program": 66,
+      "name": "Tenor Sax",
+      "family_idx": 4,
+      "family_name": "Brass & Saxophones",
+      "collection": "Lib_41_GM066_Tenor_Sax",
+      "variant": "tenor_sax",
+      "anim_family": "woodwind_keys",
+      "glow_color": [
+        1.0,
+        0.74,
+        0.28
+      ],
+      "part_count": 10
+    },
+    "68": {
+      "index": 42,
+      "gm_program": 68,
+      "name": "Oboe",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "collection": "Lib_42_GM068_Oboe",
+      "variant": "oboe",
+      "anim_family": "woodwind_keys",
+      "glow_color": [
+        0.82,
+        0.92,
+        1.0
+      ],
+      "part_count": 16
+    },
+    "69": {
+      "index": 43,
+      "gm_program": 69,
+      "name": "English Horn",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "collection": "Lib_43_GM069_English_Horn",
+      "variant": "ehorn",
+      "anim_family": "woodwind_keys",
+      "glow_color": [
+        0.92,
+        0.76,
+        0.48
+      ],
+      "part_count": 13
+    },
+    "70": {
+      "index": 44,
+      "gm_program": 70,
+      "name": "Bassoon",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "collection": "Lib_44_GM070_Bassoon",
+      "variant": "bassoon",
+      "anim_family": "woodwind_keys",
+      "glow_color": [
+        0.88,
+        0.54,
+        0.28
+      ],
+      "part_count": 14
+    },
+    "71": {
+      "index": 45,
+      "gm_program": 71,
+      "name": "Clarinet",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "collection": "Lib_45_GM071_Clarinet",
+      "variant": "clarinet",
+      "anim_family": "woodwind_keys",
+      "glow_color": [
+        0.78,
+        0.9,
+        1.0
+      ],
+      "part_count": 18
+    },
+    "72": {
+      "index": 46,
+      "gm_program": 72,
+      "name": "Piccolo",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "collection": "Lib_46_GM072_Piccolo",
+      "variant": "piccolo",
+      "anim_family": "flute_air",
+      "glow_color": [
+        0.78,
+        0.98,
+        1.0
+      ],
+      "part_count": 14
+    },
+    "73": {
+      "index": 47,
+      "gm_program": 73,
+      "name": "Flute",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "collection": "Lib_47_GM073_Flute",
+      "variant": "flute",
+      "anim_family": "flute_air",
+      "glow_color": [
+        0.64,
+        0.96,
+        1.0
+      ],
+      "part_count": 18
+    },
+    "74": {
+      "index": 48,
+      "gm_program": 74,
+      "name": "Recorder",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "collection": "Lib_48_GM074_Recorder",
+      "variant": "recorder",
+      "anim_family": "flute_air",
+      "glow_color": [
+        0.96,
+        0.72,
+        0.36
+      ],
+      "part_count": 16
+    },
+    "75": {
+      "index": 49,
+      "gm_program": 75,
+      "name": "Pan Flute",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "collection": "Lib_49_GM075_Pan_Flute",
+      "variant": "panflute",
+      "anim_family": "pan_flute",
+      "glow_color": [
+        0.98,
+        0.78,
+        0.34
+      ],
+      "part_count": 24
+    },
+    "77": {
+      "index": 50,
+      "gm_program": 77,
+      "name": "Shakuhachi",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "collection": "Lib_50_GM077_Shakuhachi",
+      "variant": "shakuhachi",
+      "anim_family": "flute_air",
+      "glow_color": [
+        0.94,
+        0.76,
+        0.38
+      ],
+      "part_count": 13
+    },
+    "78": {
+      "index": 51,
+      "gm_program": 78,
+      "name": "Whistle",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "collection": "Lib_51_GM078_Whistle",
+      "variant": "whistle",
+      "anim_family": "flute_air",
+      "glow_color": [
+        0.82,
+        0.96,
+        1.0
+      ],
+      "part_count": 12
+    },
+    "79": {
+      "index": 52,
+      "gm_program": 79,
+      "name": "Ocarina",
+      "family_idx": 5,
+      "family_name": "Woodwinds & Flutes",
+      "collection": "Lib_52_GM079_Ocarina",
+      "variant": "ocarina",
+      "anim_family": "ocarina_pulse",
+      "glow_color": [
+        0.35,
+        0.8,
+        1.0
+      ],
+      "part_count": 11
+    },
+    "104": {
+      "index": 53,
+      "gm_program": 104,
+      "name": "Sitar",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "collection": "Lib_53_GM104_Sitar",
+      "variant": "sitar",
+      "anim_family": "plucked_strings",
+      "glow_color": [
+        1.0,
+        0.68,
+        0.26
+      ],
+      "part_count": 28
+    },
+    "105": {
+      "index": 54,
+      "gm_program": 105,
+      "name": "Banjo",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "collection": "Lib_54_GM105_Banjo",
+      "variant": "banjo",
+      "anim_family": "plucked_strings",
+      "glow_color": [
+        1.0,
+        0.84,
+        0.42
+      ],
+      "part_count": 34
+    },
+    "106": {
+      "index": 55,
+      "gm_program": 106,
+      "name": "Shamisen",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "collection": "Lib_55_GM106_Shamisen",
+      "variant": "shamisen",
+      "anim_family": "plucked_strings",
+      "glow_color": [
+        0.98,
+        0.86,
+        0.6
+      ],
+      "part_count": 16
+    },
+    "107": {
+      "index": 56,
+      "gm_program": 107,
+      "name": "Koto",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "collection": "Lib_56_GM107_Koto",
+      "variant": "koto",
+      "anim_family": "harp_strings",
+      "glow_color": [
+        0.98,
+        0.74,
+        0.34
+      ],
+      "part_count": 22
+    },
+    "108": {
+      "index": 57,
+      "gm_program": 108,
+      "name": "Kalimba",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "collection": "Lib_57_GM108_Kalimba",
+      "variant": "kalimba",
+      "anim_family": "kalimba_tines",
+      "glow_color": [
+        0.6,
+        0.94,
+        1.0
+      ],
+      "part_count": 18
+    },
+    "109": {
+      "index": 58,
+      "gm_program": 109,
+      "name": "Bagpipe",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "collection": "Lib_58_GM109_Bagpipe",
+      "variant": "bagpipe",
+      "anim_family": "bagpipe_bag",
+      "glow_color": [
+        0.38,
+        0.88,
+        0.56
+      ],
+      "part_count": 22
+    },
+    "111": {
+      "index": 59,
+      "gm_program": 111,
+      "name": "Shanai",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "collection": "Lib_59_GM111_Shanai",
+      "variant": "shanai",
+      "anim_family": "woodwind_keys",
+      "glow_color": [
+        1.0,
+        0.72,
+        0.28
+      ],
+      "part_count": 10
+    },
+    "114": {
+      "index": 60,
+      "gm_program": 114,
+      "name": "Steel Drums",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "collection": "Lib_60_GM114_Steel_Drums",
+      "variant": "steel_drum",
+      "anim_family": "steelpan_petals",
+      "glow_color": [
+        0.38,
+        0.9,
+        1.0
+      ],
+      "part_count": 13
+    },
+    "115": {
+      "index": 61,
+      "gm_program": 115,
+      "name": "Woodblock",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "collection": "Lib_61_GM115_Woodblock",
+      "variant": "woodblock",
+      "anim_family": "woodblock_clapper",
+      "glow_color": [
+        1.0,
+        0.64,
+        0.24
+      ],
+      "part_count": 10
+    },
+    "80": {
+      "index": 62,
+      "gm_program": 80,
+      "name": "Square Lead",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "collection": "Lib_62_GM080_Square_Lead",
+      "variant": "square",
+      "anim_family": "synth_euclid",
+      "glow_color": [
+        0.15,
+        0.96,
+        0.62
+      ],
+      "part_count": 40
+    },
+    "81": {
+      "index": 63,
+      "gm_program": 81,
+      "name": "Sawtooth Lead",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "collection": "Lib_63_GM081_Sawtooth_Lead",
+      "variant": "saw",
+      "anim_family": "synth_saw",
+      "glow_color": [
+        1.0,
+        0.65,
+        0.16
+      ],
+      "part_count": 39
+    },
+    "88": {
+      "index": 64,
+      "gm_program": 88,
+      "name": "New Age Pad",
+      "family_idx": 6,
+      "family_name": "World Ethnic & Synth",
+      "collection": "Lib_64_GM088_New_Age_Pad",
+      "variant": "pad",
+      "anim_family": "synth_pad",
+      "glow_color": [
+        0.2,
+        0.86,
+        1.0
+      ],
+      "part_count": 34
+    }
+  }
+}

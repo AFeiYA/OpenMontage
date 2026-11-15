@@ -1,0 +1,217 @@
+{
+  "fps": 60,
+  "total_frames": 734,
+  "acts": [
+    {
+      "act_idx": 0,
+      "code": "ACT I",
+      "title": "ACT I  ·  CONSERVATORY SALON"
+    },
+    {
+      "act_idx": 1,
+      "code": "ACT II",
+      "title": "ACT II  ·  STRINGS & BRASS ROTUNDA"
+    },
+    {
+      "act_idx": 2,
+      "code": "ACT III",
+      "title": "ACT III  ·  FOLKLORE PAVILION"
+    },
+    {
+      "act_idx": 3,
+      "code": "ACT IV",
+      "title": "ACT IV  ·  NEON SYNTH VAULT"
+    }
+  ],
+  "events": [
+    {
+      "frame_hit": 63,
+      "t_hit": 1.05,
+      "marble_idx": 0,
+      "act_idx": 0,
+      "instrument": "Acoustic Grand Piano",
+      "pitch_name": "E4",
+      "velocity": 102
+    },
+    {
+      "frame_hit": 85,
+      "t_hit": 1.42,
+      "marble_idx": 0,
+      "act_idx": 0,
+      "instrument": "Acoustic Grand Piano",
+      "pitch_name": "G4",
+      "velocity": 108
+    },
+    {
+      "frame_hit": 99,
+      "t_hit": 1.65,
+      "marble_idx": 1,
+      "act_idx": 0,
+      "instrument": "Orchestral Harp",
+      "pitch_name": "C5",
+      "velocity": 98
+    },
+    {
+      "frame_hit": 123,
+      "t_hit": 2.05,
+      "marble_idx": 1,
+      "act_idx": 0,
+      "instrument": "Music Box",
+      "pitch_name": "E5",
+      "velocity": 104
+    },
+    {
+      "frame_hit": 145,
+      "t_hit": 2.42,
+      "marble_idx": 0,
+      "act_idx": 0,
+      "instrument": "Vibraphone",
+      "pitch_name": "B4",
+      "velocity": 110
+    },
+    {
+      "frame_hit": 204,
+      "t_hit": 3.4,
+      "marble_idx": 0,
+      "act_idx": 1,
+      "instrument": "Violin",
+      "pitch_name": "A4",
+      "velocity": 112
+    },
+    {
+      "frame_hit": 229,
+      "t_hit": 3.82,
+      "marble_idx": 0,
+      "act_idx": 1,
+      "instrument": "Accordion",
+      "pitch_name": "E4",
+      "velocity": 106
+    },
+    {
+      "frame_hit": 249,
+      "t_hit": 4.15,
+      "marble_idx": 1,
+      "act_idx": 1,
+      "instrument": "French Horn",
+      "pitch_name": "C4",
+      "velocity": 114
+    },
+    {
+      "frame_hit": 275,
+      "t_hit": 4.58,
+      "marble_idx": 1,
+      "act_idx": 1,
+      "instrument": "Trombone",
+      "pitch_name": "G3",
+      "velocity": 110
+    },
+    {
+      "frame_hit": 303,
+      "t_hit": 5.05,
+      "marble_idx": 0,
+      "act_idx": 1,
+      "instrument": "String Ensemble",
+      "pitch_name": "C5",
+      "velocity": 108
+    },
+    {
+      "frame_hit": 363,
+      "t_hit": 6.05,
+      "marble_idx": 0,
+      "act_idx": 2,
+      "instrument": "Sitar",
+      "pitch_name": "D4",
+      "velocity": 106
+    },
+    {
+      "frame_hit": 389,
+      "t_hit": 6.48,
+      "marble_idx": 0,
+      "act_idx": 2,
+      "instrument": "Bagpipe",
+      "pitch_name": "G4",
+      "velocity": 112
+    },
+    {
+      "frame_hit": 408,
+      "t_hit": 6.8,
+      "marble_idx": 1,
+      "act_idx": 2,
+      "instrument": "Steel Drums",
+      "pitch_name": "D5",
+      "velocity": 110
+    },
+    {
+      "frame_hit": 434,
+      "t_hit": 7.24,
+      "marble_idx": 1,
+      "act_idx": 2,
+      "instrument": "Flute",
+      "pitch_name": "G5",
+      "velocity": 104
+    },
+    {
+      "frame_hit": 462,
+      "t_hit": 7.7,
+      "marble_idx": 0,
+      "act_idx": 2,
+      "instrument": "Marimba",
+      "pitch_name": "A4",
+      "velocity": 108
+    },
+    {
+      "frame_hit": 525,
+      "t_hit": 8.75,
+      "marble_idx": 0,
+      "act_idx": 3,
+      "instrument": "Square Lead",
+      "pitch_name": "C4",
+      "velocity": 114
+    },
+    {
+      "frame_hit": 531,
+      "t_hit": 8.85,
+      "marble_idx": 1,
+      "act_idx": 3,
+      "instrument": "Sawtooth Lead",
+      "pitch_name": "G4",
+      "velocity": 114
+    },
+    {
+      "frame_hit": 553,
+      "t_hit": 9.22,
+      "marble_idx": 0,
+      "act_idx": 3,
+      "instrument": "Sawtooth Lead",
+      "pitch_name": "E4",
+      "velocity": 116
+    },
+    {
+      "frame_hit": 559,
+      "t_hit": 9.32,
+      "marble_idx": 1,
+      "act_idx": 3,
+      "instrument": "New Age Pad",
+      "pitch_name": "C5",
+      "velocity": 115
+    },
+    {
+      "frame_hit": 585,
+      "t_hit": 9.75,
+      "marble_idx": 0,
+      "act_idx": 3,
+      "instrument": "Orchestra Hit",
+      "pitch_name": "C3",
+      "velocity": 125
+    },
+    {
+      "frame_hit": 587,
+      "t_hit": 9.78,
+      "marble_idx": 1,
+      "act_idx": 3,
+      "instrument": "Orchestra Hit",
+      "pitch_name": "C4",
+      "velocity": 125
+    }
+  ]
+}
