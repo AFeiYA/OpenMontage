@@ -105,7 +105,7 @@ def main() -> None:
         ass_escaped = os.path.abspath(out_ass).replace("\\", "\\\\").replace(":", "\\:")
         cmd = [
             "ffmpeg", "-y", "-i", in_mp4,
-            "-vf", f"ass='{ass_escaped}'",
+            "-vf", f"ass={ass_escaped}",
             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "17", "-c:a", "copy",
             out_mp4,
         ]
