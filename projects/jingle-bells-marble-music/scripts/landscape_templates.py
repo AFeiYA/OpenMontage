@@ -29,13 +29,13 @@ LIB_BLEND = os.path.join(ASSETS_DIR, "instrument_library_v2.blend")
 MANIFEST_JSON = os.path.join(ASSETS_DIR, "instrument_manifest_v2.json")
 
 FPS = 60
-GRAVITY = 28.0
+GRAVITY = 14.0
 MARBLE_RADIUS = 0.092
 FLIGHT_Y = -0.10
 SUB_Y_OFFSET = 0.11       # Pushes v3.0 bodies strictly behind flight lane (Y >= +0.14)
-ANVIL_LEN = 0.42
-ANVIL_WID_Y = 0.22
-ANVIL_THICK = 0.036
+ANVIL_LEN = 0.28
+ANVIL_WID_Y = 0.18
+ANVIL_THICK = 0.034
 RAIL_HALF_GAP = 0.052
 RAIL_PIPE_R = 0.012
 INST_DISPLAY_TILT_DEG = 20.0
@@ -243,8 +243,25 @@ def load_static_instrument_library(
     return templates, mats, manifest
 
 
+EXPLICIT_INSTRUMENT_ALIASES = {
+    "piano": 0,
+    "acoustic grand piano": 0,
+    "grand piano": 0,
+    "marimba": 12,
+    "xylophone": 13,
+    "tubular bells": 14,
+    "guitar": 24,
+    "acoustic guitar": 24,
+    "harp": 46,
+    "castanets": 115,
+    "woodblock": 115,
+}
+
+
 def resolve_gm_program(instrument_name: str, track_idx: int, manifest: dict) -> int:
     name_l = instrument_name.strip().lower()
+    if name_l in EXPLICIT_INSTRUMENT_ALIASES:
+        return EXPLICIT_INSTRUMENT_ALIASES[name_l]
     aliases = manifest.get("name_aliases", {})
     if name_l in aliases:
         return int(aliases[name_l])
@@ -520,10 +537,16 @@ def compute_station_aabbs_at_transform(
         st_pos = Vector(st["center"])
         sc = float(st.get("inst_scale", 1.0))
 
+        wheel_upright = bool(st.get("wheel_upright")) and world_rot is not None
+        wc = world_origin or Vector((0, 0, 0))
+        rotated_center = (wc + (world_rot @ (st_pos - wc))) if wheel_upright else st_pos
+
         def to_world(local_p: Vector) -> Vector:
+            if wheel_upright:
+                return rotated_center + (st_rot @ local_p)
             p = st_pos + (st_rot @ local_p)
             if world_rot is not None:
-                p = (world_origin or Vector((0, 0, 0))) + (world_rot @ (p - (world_origin or Vector((0, 0, 0)))))
+                p = wc + (world_rot @ (p - wc))
             return p
 
         hx = float(st.get("anvil_len", ANVIL_LEN)) * 0.5
@@ -728,19 +751,8 @@ def group_notes_into_phrases(notes: list[dict], gap_thresh: float = 0.65) -> lis
 
 
 def _cluster_phrase_stations(phrase: list[tuple[int, dict]]) -> list[list[tuple[int, dict]]]:
-    """Merge consecutive fast repeated same-pitch hits (dt <= 0.24s) onto a single station."""
-    clusters: list[list[tuple[int, dict]]] = []
-    for item in phrase:
-        _, n = item
-        if clusters:
-            _, prev_n = clusters[-1][-1]
-            same_pitch = int(n["note"]) == int(prev_n["note"])
-            fast_repeat = (float(n["start_time"]) - float(prev_n["start_time"])) <= 0.24
-            if same_pitch and fast_repeat:
-                clusters[-1].append(item)
-                continue
-        clusters.append([item])
-    return clusters
+    """Rule 4: 1 note = 1 dedicated board. Never strike the same board twice."""
+    return [[item] for item in phrase]
 
 
 def _update_bounces_from_stations(stations: list[dict], bounces: list[dict]) -> None:
@@ -818,27 +830,28 @@ def plan_serpentine_descent(
 
     # Place each phrase as an alternating diagonal run sweeping Left->Right then Right->Left descending in Z
     y = FLIGHT_Y
-    run_drop = 1.65
-    z_cursor = 2.45
-    min_x, max_x = -2.55, 2.55
+    run_drop = 1.85
+    z_cursor = 2.55
+    min_x, max_x = -2.35, 2.35
 
     for p_idx, phrase in enumerate(phrases):
         clusters = _cluster_phrase_stations(phrase)
         going_right = (p_idx % 2 == 0)
         nc = len(clusters)
         z_start = z_cursor
-        z_end = z_start - 0.85
+        z_end = z_start - 0.90
+        tier_min_x = min_x - 0.60 * p_idx
+        tier_max_x = max_x + 0.60 * p_idx
         for c_i, cl in enumerate(clusters):
             frac = c_i / max(1, nc - 1) if nc > 1 else 0.5
-            cx = (min_x + frac * (max_x - min_x)) if going_right else (max_x - frac * (max_x - min_x))
+            cx = (tier_min_x + frac * (tier_max_x - tier_min_x)) if going_right else (tier_max_x - frac * (tier_max_x - tier_min_x))
             # Organic pitch-weighted gentle vertical modulation around diagonal slope
             n0 = cl[0][1]
             pitch_off = ((int(n0["note"]) - 72) / 12.0) * 0.08
             cz = z_start + frac * (z_end - z_start) + pitch_off
-            slope_rad = math.radians(-8.0 if going_right else 8.0)
-            axis_u = [math.cos(slope_rad), 0.0, math.sin(slope_rad)]
-            axis_n = [-math.sin(slope_rad), 0.0, math.cos(slope_rad)]
-            anvil_len = 0.52 if len(cl) > 1 else ANVIL_LEN
+            axis_u = [1.0, 0.0, 0.0]
+            axis_n = [0.0, 0.0, 1.0]
+            anvil_len = ANVIL_LEN
 
             st = {
                 "id": sid,
@@ -888,71 +901,39 @@ def plan_serpentine_descent(
         z_cursor = z_end - run_drop * 0.55
 
     # Relax any overlapping neighboring stations with jitter solver
-    resolve_station_jitter(stations, templates, manifest, min_gap=0.16, allow_z_jitter=True)
+    resolve_station_jitter(stations, templates, manifest, min_gap=0.25, allow_z_jitter=True)
     _update_bounces_from_stations(stations, bounces)
     bounces.sort(key=lambda b: b["t"])
 
     rails_plan, segments = [], []
 
-    # Opening slide gliding rightward from Left Arch into Note 0
+    # Pure ballistic opening drop onto Note 0 (Rule 1: zero tubes)
     p0 = Vector(bounces[0]["marble_pos"])
-    open_wp = [
-        Vector((p0.x - 1.35, y, p0.z + 0.62)),
-        Vector((p0.x - 0.72, y, p0.z + 0.58)),
-        Vector((p0.x - 0.16, y, p0.z + 0.36)),
-    ]
-    open_arc = resample_by_arc_length(catmull_rom_chain(open_wp, 16), 140)
-    rails_plan.append({"name": "SerpOpenSlide", "points": [[p.x, p.y, p.z] for p in open_arc]})
+    p_open_start = Vector((p0.x - 1.15, y, p0.z + 0.95))
     segments.append({
-        "type": "rail_drop", "t0": 0.0, "t1": pre_roll, "rail_end_t": pre_roll - 0.14,
-        "arc_pts": [[p.x, p.y, p.z] for p in open_arc], "p_target": [p0.x, p0.y, p0.z],
+        "type": "ballistic", "t0": 0.0, "t1": pre_roll,
+        "p0": [p_open_start.x, p_open_start.y, p_open_start.z],
+        "p1": [p0.x, p0.y, p0.z],
     })
 
-    turn_idx = 0
     for k in range(len(bounces) - 1):
         b0, b1 = bounces[k], bounces[k + 1]
         t0, t1 = float(b0["t"]), float(b1["t"])
-        dt = t1 - t0
         pa, pb = Vector(b0["marble_pos"]), Vector(b1["marble_pos"])
-        if dt <= 0.65:
-            segments.append({"type": "ballistic", "t0": t0, "t1": t1, "p0": [pa.x, pa.y, pa.z], "p1": [pb.x, pb.y, pb.z]})
-        else:
-            turn_idx += 1
-            # Sweeping outer switchback U-bend brass chute turning smoothly outside the active stations
-            go_out_right = bool(b0["going_right"])
-            apex_x = max(pa.x, pb.x) + 0.85 if go_out_right else min(pa.x, pb.x) - 0.85
-            dir_s = 1.0 if go_out_right else -1.0
-            wp = [
-                Vector((pa.x + dir_s * 0.25, y, pa.z + 0.20)),
-                Vector((apex_x, y, pa.z - 0.08)),
-                Vector((apex_x + dir_s * 0.10, y, 0.5 * (pa.z + pb.z) + 0.15)),
-                Vector((apex_x - dir_s * 0.10, y, pb.z + 0.42)),
-                Vector((pb.x + dir_s * 0.10, y, pb.z + 0.34)),
-            ]
-            arc = resample_by_arc_length(catmull_rom_chain(wp, 16), 180)
-            rails_plan.append({"name": f"SerpTurn_{turn_idx:02d}", "points": [[p.x, p.y, p.z] for p in arc]})
-            segments.append({
-                "type": "loop_chute", "t0": t0, "t1": t1,
-                "p0": [pa.x, pa.y, pa.z], "p1": [pb.x, pb.y, pb.z],
-                "launch_dt": 0.13, "drop_dt": 0.15,
-                "arc_pts": [[p.x, p.y, p.z] for p in arc],
-            })
+        segments.append({
+            "type": "ballistic", "t0": t0, "t1": t1,
+            "p0": [pa.x, pa.y, pa.z], "p1": [pb.x, pb.y, pb.z],
+        })
 
-    # Clean exit chute drifting leftward after finale bounce
+    # Pure ballistic closing hop off the final board
     p_end = Vector(bounces[-1]["marble_pos"])
     t_end_n = float(bounces[-1]["t"])
     t_fin = t_end_n + post_roll
-    end_wp = [
-        Vector((p_end.x - 0.25, y, p_end.z + 0.22)),
-        Vector((p_end.x - 0.95, y, p_end.z - 0.10)),
-        Vector((p_end.x - 1.75, y, p_end.z - 0.48)),
-    ]
-    end_arc = resample_by_arc_length(catmull_rom_chain(end_wp, 16), 140)
-    rails_plan.append({"name": "SerpExitChute", "points": [[p.x, p.y, p.z] for p in end_arc]})
+    p_exit_end = Vector((p_end.x - 1.25, y, p_end.z - 0.55))
     segments.append({
-        "type": "launch_rail", "t0": t_end_n, "t1": t_fin,
-        "launch_dt": 0.14, "p0": [p_end.x, p_end.y, p_end.z],
-        "arc_pts": [[p.x, p.y, p.z] for p in end_arc],
+        "type": "ballistic", "t0": t_end_n, "t1": t_fin,
+        "p0": [p_end.x, p_end.y, p_end.z],
+        "p1": [p_exit_end.x, p_exit_end.y, p_exit_end.z],
     })
 
     return _finalize_trajectory(
@@ -977,12 +958,12 @@ def plan_diamond_loop(
         phrases[-2].extend(phrases[-1])
         phrases.pop()
 
-    # True 16:9 widescreen diamond (~2.1 : 1) with generous 1.16m wing apex gap so Edge 2->3 / 0->1 clear cleanly
+    # True 16:9 widescreen diamond with gentle slope & wide corner stagger so horizontal boards never clip climbing arcs
     corners = [
-        (Vector((0.32, FLIGHT_Y, 1.92)), Vector((3.82, FLIGHT_Y, 0.58)), False),    # Edge 0: Down-Right gravity
-        (Vector((3.82, FLIGHT_Y, -0.58)), Vector((0.32, FLIGHT_Y, -1.92)), False),  # Edge 1: Down-Left gravity
-        (Vector((-0.34, FLIGHT_Y, -1.88)), Vector((-3.82, FLIGHT_Y, -0.58)), True), # Edge 2: Climb-Left spring
-        (Vector((-3.82, FLIGHT_Y, 0.58)), Vector((-0.32, FLIGHT_Y, 1.88)), True),   # Edge 3: Climb-Right spring
+        (Vector((0.72, FLIGHT_Y, 1.48)), Vector((3.30, FLIGHT_Y, 0.52)), False),    # Edge 0: Down-Right gravity
+        (Vector((4.30, FLIGHT_Y, -0.52)), Vector((0.72, FLIGHT_Y, -1.48)), False),  # Edge 1: Down-Left gravity
+        (Vector((-0.72, FLIGHT_Y, -1.46)), Vector((-5.55, FLIGHT_Y, -0.52)), True), # Edge 2: Climb-Left spring
+        (Vector((-4.65, FLIGHT_Y, 0.96)), Vector((-0.25, FLIGHT_Y, 1.46)), True),   # Edge 3: Climb-Right spring (gentle slope)
     ]
 
     stations, bounces = [], []
@@ -999,9 +980,7 @@ def plan_diamond_loop(
             jitter = ((c_i % 2) * 2 - 1) * 0.05 * perp
             pos = p_a.lerp(p_b, frac) + jitter
             n0 = cl[0][1]
-            # Face normal slightly toward incoming flight direction (Edge 2 goes Left: +n_x -> -10deg; Edge 3 goes Right: -n_x -> +10deg)
-            tilt_deg = (-9.0 if p_idx == 2 else 9.0) if is_climb else (-6.0 if p_idx == 0 else 6.0)
-            rad = math.radians(tilt_deg)
+            # Rule 2 & 3: strictly horizontal board facing UP, long edge along X facing audience
             st = {
                 "id": sid,
                 "tier": p_idx,
@@ -1011,10 +990,10 @@ def plan_diamond_loop(
                 "pitch_name": n0.get("pitch_name", f"M{n0['note']}"),
                 "center": [pos.x, pos.y, pos.z],
                 "contact": [pos.x, pos.y, pos.z + ANVIL_THICK * 0.5],
-                "axis_u": [math.cos(rad), 0.0, math.sin(rad)],
+                "axis_u": [1.0, 0.0, 0.0],
                 "axis_v": [0.0, 1.0, 0.0],
-                "axis_n": [-math.sin(rad), 0.0, math.cos(rad)],
-                "anvil_len": 0.44 if len(cl) > 1 else ANVIL_LEN,
+                "axis_n": [0.0, 0.0, 1.0],
+                "anvil_len": ANVIL_LEN,
                 "inst_scale": 0.72,
                 "spring_actuator": is_climb,
                 "hits": [],
@@ -1042,44 +1021,18 @@ def plan_diamond_loop(
     aabbs_stat = compute_station_aabbs_at_transform(stations, templates, manifest)
 
     rails_plan, segments = [], []
-    # Wrap end->start seam seamlessly: add closing bridge back to Note 0 apex (dt ~ 0.90s)
+    # Wrap end->start seam seamlessly with pure ballistic bounces (Rule 1: zero tubes)
     t_loop = float(bounces[-1]["t"]) + 0.92
-    turn_idx = 0
     for k in range(len(bounces)):
         b0 = bounces[k]
         b1 = bounces[(k + 1) % len(bounces)]
         t0 = float(b0["t"])
         t1 = float(b1["t"]) if k + 1 < len(bounces) else t_loop
-        dt = t1 - t0
         pa, pb = Vector(b0["marble_pos"]), Vector(b1["marble_pos"])
-        if dt <= 0.65:
-            segments.append({"type": "ballistic", "t0": t0, "t1": t1, "p0": [pa.x, pa.y, pa.z], "p1": [pb.x, pb.y, pb.z]})
-        else:
-            turn_idx += 1
-            # Safe apex turnaround: wing turns swing horizontally wide; top/bottom apexes arch gracefully clear
-            mid = 0.5 * (pa + pb)
-            if abs(mid.x) > 1.2:
-                sx = 1.0 if mid.x >= 0 else -1.0
-                wp = [
-                    pa + Vector((sx * 0.62, 0.0, 0.08)),
-                    mid + Vector((sx * 1.40, 0.0, 0.02)),
-                    pb + Vector((sx * 0.52, 0.0, 0.20)),
-                ]
-            else:
-                wp = [
-                    pa + Vector((0.0, 0.0, 0.36)),
-                    Vector((mid.x, FLIGHT_Y, max(pa.z, pb.z) + 0.68)),
-                    pb + Vector((0.0, 0.0, 0.40)),
-                ]
-            wp = _ensure_rail_clearance(wp, aabbs_stat, min_clear=0.24)
-            arc = resample_by_arc_length(catmull_rom_chain(wp, 16), 170)
-            rails_plan.append({"name": f"DiamondCorner_{turn_idx:02d}", "points": [[p.x, p.y, p.z] for p in arc]})
-            segments.append({
-                "type": "loop_chute", "t0": t0, "t1": t1,
-                "p0": [pa.x, pa.y, pa.z], "p1": [pb.x, pb.y, pb.z],
-                "launch_dt": 0.13, "drop_dt": 0.15,
-                "arc_pts": [[p.x, p.y, p.z] for p in arc],
-            })
+        segments.append({
+            "type": "ballistic", "t0": t0, "t1": t1,
+            "p0": [pa.x, pa.y, pa.z], "p1": [pb.x, pb.y, pb.z],
+        })
 
     return _finalize_trajectory(
         "diamond_loop", stations, bounces, rails_plan, segments, t_loop, 0.0, camera_mode="chase_wide"
@@ -1097,10 +1050,10 @@ def plan_horological_wheel(
     t_loop: float = 11.20,
 ) -> dict:
     """True 360-deg Horological Clockwork Wheel: alternating Outer/Inner dual rings (0.70m separation) turning CCW."""
-    wheel_center = Vector((-0.20, FLIGHT_Y, 0.0))
-    omega = -2.0 * math.pi / t_loop   # CCW spin sweeps just-struck stations UP-LEFT immediately out of marble drop!
+    wheel_center = Vector((-0.20, FLIGHT_Y, -0.35))
+    omega = 2.0 * math.pi / t_loop    # CW spin (+Y rot) sweeps top-arc stations down-right immediately after strike!
     phrases = group_notes_into_phrases(notes, gap_thresh=0.65)
-    ring_radii = [2.76, 2.06]          # Even phrases on Outer Rim (2.76m), Odd on Inner Ring (2.06m): 180d & 0.70m clear!
+    ring_radii = [3.12, 2.10]          # Even phrases on Outer Rim (3.12m), Odd on Inner Ring (2.10m): 1.02m radial clearance!
     stations, bounces = [], []
     sid = 0
 
@@ -1110,9 +1063,9 @@ def plan_horological_wheel(
         rad_base = ring_radii[p_idx % 2]
         for c_i, cl in enumerate(clusters):
             frac = c_i / max(1, nc - 1) if nc > 1 else 0.45
-            # Upper-right arc (+80 deg down to +24 deg): CCW wheel sweeps anvils strongly UP-LEFT away from drop!
-            theta_w = math.radians(80.0 - frac * 56.0)
-            rad = rad_base + (0.02 if (sid % 2 == 0) else -0.02)
+            # Clean 60-deg top-arch contact zone (60 deg -> 120 deg): stays above wheel & separates inner/outer rings!
+            theta_w = math.radians(60.0 + frac * 60.0)
+            rad = rad_base + (0.08 if (sid % 2 == 0) else -0.08)
             world_contact = Vector((
                 wheel_center.x + rad * math.cos(theta_w),
                 FLIGHT_Y,
@@ -1135,10 +1088,14 @@ def plan_horological_wheel(
                 "axis_u": [1.0, 0.0, 0.0],
                 "axis_v": [0.0, 1.0, 0.0],
                 "axis_n": [0.0, 0.0, 1.0],
-                "anvil_len": 0.40 if len(cl) > 1 else 0.32,
-                "inst_scale": 0.64,
+                "anvil_len": ANVIL_LEN,
+                "inst_scale": 0.42,
                 "spring_actuator": False,
                 "wheel_local": True,
+                "wheel_upright": True,
+                "wheel_center": [wheel_center.x, wheel_center.y, wheel_center.z],
+                "wheel_omega": omega,
+                "wheel_t_loop": t_loop,
                 "hits": [],
             }
             for sub_k, (note_idx, n) in enumerate(cl):
@@ -1171,41 +1128,22 @@ def plan_horological_wheel(
     bounces.sort(key=lambda b: b["t"])
     rails_plan, segments = [], []
 
-    # Fixed outer brass scoop rails returning marble cleanly outside the spinning wheel!
-    turn_idx = 0
+    # Pure ballistic bounces everywhere (Rule 1: zero tubes)
     for k in range(len(bounces)):
         b0 = bounces[k]
         b1 = bounces[(k + 1) % len(bounces)]
         t0 = float(b0["t"])
         t1 = float(b1["t"]) if k + 1 < len(bounces) else t_loop
-        dt = t1 - t0
         pa, pb = Vector(b0["marble_pos"]), Vector(b1["marble_pos"])
-        if dt <= 0.65:
-            segments.append({"type": "ballistic", "t0": t0, "t1": t1, "p0": [pa.x, pa.y, pa.z], "p1": [pb.x, pb.y, pb.z]})
-        else:
-            turn_idx += 1
-            # Front-lane 3D outer brass bypass bridge (Y_BRIDGE = -0.36 stays cleanly in front of ALL rotating wheel anvils!)
-            y_bridge = -0.36
-            wp = [
-                Vector((pa.x + 0.30, y_bridge, pa.z + 0.14)),
-                Vector((wheel_center.x + 3.45, y_bridge, wheel_center.z + 0.95)),
-                Vector((wheel_center.x + 2.95, y_bridge, wheel_center.z + 2.35)),
-                Vector((wheel_center.x + 1.35, y_bridge, wheel_center.z + 3.02)),
-                Vector((pb.x + 0.08, y_bridge, pb.z + 0.24)),
-            ]
-            arc = resample_by_arc_length(catmull_rom_chain(wp, 16), 190)
-            rails_plan.append({"name": f"WheelScoop_{turn_idx:02d}", "points": [[p.x, p.y, p.z] for p in arc]})
-            segments.append({
-                "type": "loop_chute", "t0": t0, "t1": t1,
-                "p0": [pa.x, pa.y, pa.z], "p1": [pb.x, pb.y, pb.z],
-                "launch_dt": 0.14, "drop_dt": 0.16,
-                "arc_pts": [[p.x, p.y, p.z] for p in arc],
-            })
+        segments.append({
+            "type": "ballistic", "t0": t0, "t1": t1,
+            "p0": [pa.x, pa.y, pa.z], "p1": [pb.x, pb.y, pb.z],
+        })
 
     wheel_cfg = {
         "center": [wheel_center.x, wheel_center.y, wheel_center.z],
-        "radius": 2.98,
-        "rings": [2.06, 2.76],
+        "radius": 3.28,
+        "rings": [2.10, 3.12],
         "omega": omega,
         "t_loop": t_loop,
     }
@@ -1312,10 +1250,10 @@ def create_lighting_rig(col_stage: bpy.types.Collection, z_center: float = 0.0) 
 
 
 def create_stage_backdrop_and_props(plan: dict, col_stage: bpy.types.Collection, mats: dict) -> bpy.types.Object | None:
-    """Build deep matte acoustic hall shell + warm walnut flutes + template centerpiece."""
-    wall_mat = make_pbr_material("StageObsidianShell", (0.005, 0.006, 0.009), metallic=0.02, roughness=0.90)
-    slat_mat = make_pbr_material("StageDarkWalnutSlat", (0.045, 0.024, 0.014), metallic=0.05, roughness=0.52, coat=0.15)
-    brass_trim_mat = make_pbr_material("StageDimBrassTrim", (0.38, 0.27, 0.10), metallic=0.88, roughness=0.34)
+    """Build low-contrast matte acoustic hall shell + subtle slats so marble & instruments pop cleanly."""
+    wall_mat = make_pbr_material("StageObsidianShell", (0.010, 0.011, 0.014), metallic=0.02, roughness=0.92)
+    slat_mat = make_pbr_material("StageDarkWalnutSlat", (0.020, 0.015, 0.012), metallic=0.02, roughness=0.78, coat=0.0)
+    brass_trim_mat = make_pbr_material("StageDimBrassTrim", (0.16, 0.12, 0.06), metallic=0.65, roughness=0.58)
     walnut_mat = mats.get("LibMat_Walnut") or make_pbr_material("StageWalnut", (0.14, 0.08, 0.04), roughness=0.38)
     brass_mat = mats.get("LibMat_Brass") or make_pbr_material("StageBrass", (0.82, 0.62, 0.24), metallic=0.95, roughness=0.22)
     cove_mat = make_pbr_material(
@@ -1351,19 +1289,13 @@ def create_stage_backdrop_and_props(plan: dict, col_stage: bpy.types.Collection,
     col_stage.objects.link(bobj)
     bobj.data.materials.append(wall_mat)
 
-    # Full-width vertical architectural acoustic walnut flutes + thin brass inlays (gives rich tactile depth!)
-    for idx_flute, fx in enumerate([k * 0.78 for k in range(-7, 8)]):
-        rm = create_beveled_box_mesh(f"WallFlute_{idx_flute}", 0.09, 0.10, z_span * 0.94, bevel_w=0.008)
+    # Subtle low-contrast acoustic walnut flutes (no bright vertical brass streaks behind marble!)
+    for idx_flute, fx in enumerate([k * 0.85 for k in range(-7, 8)]):
+        rm = create_beveled_box_mesh(f"WallFlute_{idx_flute}", 0.10, 0.08, z_span * 0.94, bevel_w=0.008)
         ro = bpy.data.objects.new(f"WallFlute_{idx_flute}", rm)
         col_stage.objects.link(ro)
-        ro.location = (fx, 0.92, z_mid)
+        ro.location = (fx, 0.98, z_mid)
         ro.data.materials.append(slat_mat)
-        if idx_flute % 2 == 0:
-            bm_strip = create_beveled_box_mesh(f"WallBrassStrip_{idx_flute}", 0.014, 0.02, z_span * 0.94, bevel_w=0.002)
-            bo = bpy.data.objects.new(f"WallBrassStrip_{idx_flute}", bm_strip)
-            col_stage.objects.link(bo)
-            bo.location = (fx + 0.055, 0.87, z_mid)
-            bo.data.materials.append(brass_trim_mat)
 
     # Subtle brushed-brass horizontal tier guide rails behind active shelves
     if plan["template"] == "serpentine_descent":
@@ -1429,25 +1361,25 @@ def create_stage_backdrop_and_props(plan: dict, col_stage: bpy.types.Collection,
         root.location = wc
         root.rotation_mode = "XYZ"
 
-        # Monumental Clockwork Turntable Wheel lying behind instruments (Y_local = +0.52)
+        # Monumental Clockwork Turntable Wheel lying behind instruments (Y_local = +0.52) with controlled satin bronze so instruments pop
         y_wheel = 0.52
         outer_pts = [
             [r_ring * math.cos(2.0 * math.pi * i / 72), y_wheel, r_ring * math.sin(2.0 * math.pi * i / 72)]
             for i in range(73)
         ]
-        create_tube_polyline("WheelOuterRim", outer_pts, 0.036, brass_mat, col_stage).parent = root
+        create_tube_polyline("WheelOuterRim", outer_pts, 0.032, brass_trim_mat, col_stage).parent = root
         for r_idx, r_sub in enumerate(wcfg.get("rings", [r_ring * 0.62])):
             sub_pts = [
                 [r_sub * math.cos(2.0 * math.pi * i / 72), y_wheel, r_sub * math.sin(2.0 * math.pi * i / 72)]
                 for i in range(73)
             ]
-            rmat = walnut_mat if r_idx % 2 else brass_mat
-            create_tube_polyline(f"WheelTrackRing_{r_idx:02d}", sub_pts, 0.018, rmat, col_stage).parent = root
+            rmat = walnut_mat if r_idx % 2 else brass_trim_mat
+            create_tube_polyline(f"WheelTrackRing_{r_idx:02d}", sub_pts, 0.016, rmat, col_stage).parent = root
         for s_i in range(12):
             ang = 2.0 * math.pi * s_i / 12.0
             pa = Vector((0.35 * math.cos(ang), y_wheel, 0.35 * math.sin(ang)))
             pb = Vector((r_ring * math.cos(ang), y_wheel, r_ring * math.sin(ang)))
-            spk = create_cylinder_between(f"WheelSpoke_{s_i:02d}", pa, pb, 0.016, brass_mat, col_stage, verts=12)
+            spk = create_cylinder_between(f"WheelSpoke_{s_i:02d}", pa, pb, 0.014, brass_trim_mat, col_stage, verts=12)
             if spk:
                 spk.parent = root
 
@@ -1555,10 +1487,19 @@ def spawn_station(
     rot_mat = Matrix(((u.x, v.x, n.x), (u.y, v.y, n.y), (u.z, v.z, n.z)))
     base_pos = Vector(st["center"])
 
-    # Station Base Mount (keeps parent wheel coordinate offset clean when attached to spinning wheel)
+    # Station Base Mount: Ferris-wheel upright gondola orbit when wheel_upright=True (Rule 2: always facing UP)
     mount = bpy.data.objects.new(f"Mount_{sid:02d}", None)
     col_inst.objects.link(mount)
-    if wheel_root is not None:
+    if wheel_root is not None and st.get("wheel_upright"):
+        wc = Vector(st["wheel_center"])
+        omega = float(st["wheel_omega"])
+        total_f = int(round(float(st["wheel_t_loop"]) * FPS))
+        for f in range(total_f + 1):
+            rot_f = Matrix.Rotation(omega * (f / FPS), 3, "Y")
+            mount.location = wc + (rot_f @ (base_pos - wc))
+            mount.keyframe_insert(data_path="location", frame=f)
+        mount.location = base_pos
+    elif wheel_root is not None:
         mount.parent = wheel_root
         mount.location = base_pos - wheel_root.location
     else:
@@ -1690,6 +1631,23 @@ def spawn_station(
                 ldata.energy = 0.0
                 ldata.keyframe_insert(data_path="energy", frame=max(0, f_hit - 1))
 
+        # Instrument switching & music-box wake-up anticipation (14 frames before impact)
+        if k == 0 and f_hit >= 14:
+            piv_obj.scale = (0.91, 0.91, 0.91)
+            piv_obj.location = (0.0, SUB_Y_OFFSET, -0.016)
+            piv_obj.keyframe_insert(data_path="scale", frame=0)
+            piv_obj.keyframe_insert(data_path="location", frame=0)
+            piv_obj.keyframe_insert(data_path="scale", frame=max(0, f_hit - 14))
+            piv_obj.keyframe_insert(data_path="location", frame=max(0, f_hit - 14))
+            piv_obj.scale = (1.04, 1.04, 1.04)
+            piv_obj.location = (0.0, SUB_Y_OFFSET, 0.008)
+            piv_obj.keyframe_insert(data_path="scale", frame=max(0, f_hit - 4))
+            piv_obj.keyframe_insert(data_path="location", frame=max(0, f_hit - 4))
+            piv_obj.scale = (1.0, 1.0, 1.0)
+            piv_obj.location = (0.0, SUB_Y_OFFSET, 0.0)
+            piv_obj.keyframe_insert(data_path="scale", frame=max(0, f_hit - 1))
+            piv_obj.keyframe_insert(data_path="location", frame=max(0, f_hit - 1))
+
         if st.get("spring_actuator"):
             # Visible catapult spring kick UPWARD on climb stations!
             anvil_obj.location = (0.0, 0.0, -0.018 * vel_scale)
@@ -1780,12 +1738,14 @@ def create_hero_marble(col_marble: bpy.types.Collection, frame_samples: list[dic
         marble.keyframe_insert(data_path="location", frame=f)
         marble.keyframe_insert(data_path="rotation_euler", frame=f)
         if f in hit_frames:
-            marble.scale = (1.10, 1.10, 0.82)
-            marble.keyframe_insert(data_path="scale", frame=f)
-            marble.scale = (0.94, 0.94, 1.12)
-            marble.keyframe_insert(data_path="scale", frame=f + 2)
             marble.scale = (1.0, 1.0, 1.0)
-            marble.keyframe_insert(data_path="scale", frame=f + 5)
+            marble.keyframe_insert(data_path="scale", frame=max(0, f - 1))
+            marble.scale = (1.025, 1.025, 0.96)
+            marble.keyframe_insert(data_path="scale", frame=f)
+            marble.scale = (0.988, 0.988, 1.025)
+            marble.keyframe_insert(data_path="scale", frame=f + 1)
+            marble.scale = (1.0, 1.0, 1.0)
+            marble.keyframe_insert(data_path="scale", frame=f + 3)
 
     ml = bpy.data.lights.new("MarbleRimLamp", type="POINT")
     ml.color = (0.28, 0.98, 0.66)
@@ -1801,13 +1761,20 @@ def create_hero_marble(col_marble: bpy.types.Collection, frame_samples: list[dic
 
 
 def setup_cinema_camera(scene: bpy.types.Scene, col_cam: bpy.types.Collection, plan: dict) -> None:
-    """Close-follow cinema chase cam for `serpentine_descent`, medium-wide panoramic follow for loops."""
+    """Rhythm-adaptive 16:9 cinema chase cam: oblique 3/4 depth, dynamic dolly, look-ahead & auto-focus DOF."""
     cam_data = bpy.data.cameras.new("ConcertCinemaCamData")
     mode = plan["camera_mode"]
-    cam_data.lens = 35.0 if mode == "chase" else 30.0
+    if mode == "chase":
+        cam_data.lens = 38.0
+    elif mode == "chase_wide":
+        cam_data.lens = 32.0
+    else:
+        cam_data.lens = 42.0
     cam_data.sensor_width = 36.0
     cam_data.clip_start = 0.05
     cam_data.clip_end = 120.0
+    cam_data.dof.use_dof = True
+    cam_data.dof.aperture_fstop = 6.3
     cam_obj = bpy.data.objects.new("ConcertCinemaCam", cam_data)
     col_cam.objects.link(cam_obj)
     scene.camera = cam_obj
@@ -1820,37 +1787,72 @@ def setup_cinema_camera(scene: bpy.types.Scene, col_cam: bpy.types.Collection, p
     cns.up_axis = "UP_Y"
 
     samples = plan["frame_samples"]
+    bounces = plan["bounces"]
     n_smp = len(samples)
     total_f = plan["total_frames"]
 
-    # Smooth exponential low-pass filter on marble track so camera glides with silky anticipation (NO jitter!)
+    # Map each bounce frame to local phrase spacing (dt) & velocity for rhythm-driven dolly + impact shake
+    bounce_info: list[tuple[int, float, float]] = []
+    for i, b in enumerate(bounces):
+        bf = int(b["frame"])
+        dt_next = (float(bounces[i + 1]["t"]) - float(b["t"])) if i + 1 < len(bounces) else 0.50
+        dt_prev = (float(b["t"]) - float(bounces[i - 1]["t"])) if i > 0 else 0.50
+        vel = float(b.get("velocity", 110.0))
+        bounce_info.append((bf, min(dt_next, dt_prev), vel))
+    strong_hit_frames = {bf for bf, _, vel in bounce_info if vel >= 95.0}
+
     cam_pos_smooth = Vector(samples[0]["position"])
     tgt_pos_smooth = Vector(samples[0]["position"])
-    alpha = 0.10 if mode == "chase" else 0.08
+    dolly_smooth = 1.0
+    base_alpha = 0.11 if mode == "chase" else (0.09 if mode == "chase_wide" else 0.10)
 
     for idx, smp in enumerate(samples):
         f = int(round(smp["frame_f"]))
         mp = Vector(smp["position"])
-        # Look ahead 18 frames (0.30s) so viewer naturally sees upcoming switches & instruments!
-        ahead_idx = min(n_smp - 1, idx + 18)
-        mp_ahead = Vector(samples[ahead_idx]["position"])
-        cam_pos_smooth = cam_pos_smooth.lerp(mp, alpha)
-        tgt_pos_smooth = tgt_pos_smooth.lerp(0.55 * mp + 0.45 * mp_ahead, alpha * 1.2)
+        t_cur = float(smp["t"])
 
-        if f % 4 == 0 or idx == n_smp - 1:
+        # Determine rhythm density: push in on dense runs (dt <= 0.35s), pull back on high-arc rests (dt >= 0.70s)
+        local_dt = 0.45
+        for i in range(len(bounces) - 1):
+            if float(bounces[i]["t"]) <= t_cur <= float(bounces[i + 1]["t"]):
+                local_dt = float(bounces[i + 1]["t"]) - float(bounces[i]["t"])
+                break
+        target_dolly = 0.88 if local_dt <= 0.35 else (1.20 if local_dt >= 0.70 else 1.0)
+        dolly_smooth = dolly_smooth + 0.08 * (target_dolly - dolly_smooth)
+
+        ahead_steps = 14 if local_dt <= 0.35 else 22
+        ahead_idx = min(n_smp - 1, idx + ahead_steps)
+        mp_ahead = Vector(samples[ahead_idx]["position"])
+
+        # Settle slightly around impact frames so contact is tack-steady
+        near_hit = any(abs(f - bf) <= 3 for bf, _, _ in bounce_info)
+        alpha = base_alpha * (0.65 if near_hit else 1.0)
+        cam_pos_smooth = cam_pos_smooth.lerp(mp, alpha)
+        tgt_pos_smooth = tgt_pos_smooth.lerp(0.60 * mp + 0.40 * mp_ahead, alpha * 1.15)
+
+        if f % 2 == 0 or idx == n_smp - 1:
+            shake_z = 0.0
+            if f in strong_hit_frames:
+                shake_z = -0.012
+            elif (f - 2) in strong_hit_frames:
+                shake_z = 0.005
+
             if mode == "chase":
-                # Hero close-up chase camera (~3.85m distance, instruments look monumental!)
-                cam_obj.location = (0.72 * cam_pos_smooth.x, -3.90, cam_pos_smooth.z + 0.18)
-                tgt.location = (0.78 * tgt_pos_smooth.x, 0.14, tgt_pos_smooth.z - 0.10)
+                cam_loc = Vector((0.76 * cam_pos_smooth.x + 0.65, -4.10 * dolly_smooth, cam_pos_smooth.z + 0.48 + shake_z))
+                tgt_loc = Vector((0.80 * tgt_pos_smooth.x, 0.14, tgt_pos_smooth.z - 0.06))
             elif mode == "chase_wide":
-                # Diamond Loop cam: comfortably reveals entire 4-corner diamond + outer bypass loops with clean margins
-                cam_obj.location = (0.26 * cam_pos_smooth.x, -7.85, 0.24 * cam_pos_smooth.z + 0.06)
-                tgt.location = (0.30 * tgt_pos_smooth.x, 0.12, 0.26 * tgt_pos_smooth.z)
+                cam_loc = Vector((0.28 * cam_pos_smooth.x + 0.70, -8.10 * dolly_smooth, 0.28 * cam_pos_smooth.z + 0.55 + shake_z))
+                tgt_loc = Vector((0.32 * tgt_pos_smooth.x, 0.12, 0.28 * tgt_pos_smooth.z))
             else:
-                # Wheel focus cam: frames 100% of 360-deg clockwork wheel + top front-lane bypass bridge cleanly
-                cam_obj.location = (0.45, -9.55, 0.22 + 0.06 * cam_pos_smooth.z)
-                tgt.location = (0.12, 0.10, 0.20)
+                # Wheel oblique 3/4 focus cam: ~7% marble height in close runs, pulls back smoothly on 1.2s high arcs
+                cam_loc = Vector((0.58 * cam_pos_smooth.x + 0.95, -7.85 * dolly_smooth, 0.58 * cam_pos_smooth.z + 0.92 + shake_z))
+                tgt_loc = Vector((0.64 * tgt_pos_smooth.x - 0.06, 0.10, 0.64 * tgt_pos_smooth.z + 0.28))
+
+            cam_obj.location = cam_loc
+            tgt.location = tgt_loc
+            cam_data.dof.focus_distance = max(1.0, (cam_loc - mp).length)
 
             f_key = total_f if idx == n_smp - 1 else f
             cam_obj.keyframe_insert(data_path="location", frame=f_key)
             tgt.keyframe_insert(data_path="location", frame=f_key)
+            cam_data.dof.keyframe_insert(data_path="focus_distance", frame=f_key)

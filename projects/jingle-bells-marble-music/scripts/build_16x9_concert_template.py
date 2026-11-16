@@ -89,6 +89,7 @@ def build_template_scene(
     still_spec: str = "",
     render_anim: bool = False,
     max_note_t: float = 10.0,
+    frame_step: int = 1,
 ) -> dict:
     if template_name not in TEMPLATE_PLANNERS:
         raise ValueError(f"Unknown template '{template_name}'. Choices: {list(TEMPLATE_PLANNERS)}")
@@ -167,6 +168,7 @@ def build_template_scene(
 
     if render_frames_dir and render_anim:
         os.makedirs(render_frames_dir, exist_ok=True)
+        scene.frame_step = max(1, int(frame_step))
         scene.render.filepath = os.path.join(render_frames_dir, "frame_")
         bpy.ops.render.render(animation=True)
 
@@ -185,7 +187,8 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--notes", default=os.path.join(ARTIFACTS_DIR, "sample_14s_notes.json"))
     ap.add_argument("--max-note-t", type=float, default=10.0)
     ap.add_argument("--stills", default="", help="Comma-separated frame numbers or 'auto'")
-    ap.add_argument("--render-anim", action="store_true", help="Render full 60fps PNG sequence")
+    ap.add_argument("--render-anim", action="store_true", help="Render full PNG sequence")
+    ap.add_argument("--frame-step", type=int, default=1, help="Frame step (e.g. 2 for 30fps test render)")
     return ap.parse_args(argv)
 
 
@@ -208,4 +211,5 @@ if __name__ == "__main__":
             still_spec=args.stills,
             render_anim=args.render_anim,
             max_note_t=args.max_note_t,
+            frame_step=args.frame_step,
         )
