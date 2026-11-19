@@ -124,9 +124,10 @@ def build_template_scene(
     tie_dark = make_pbr_material("RailTieDarkBronze", (0.14, 0.10, 0.08), metallic=0.75, roughness=0.32)
     brass_mat = mats.get("LibMat_Brass") or rail_mat
 
+    use_pt_lights = len(plan["stations"]) <= 60
     for st in plan["stations"]:
         parent_root = wheel_root if st.get("wheel_local") else None
-        spawn_station(st, templates, mats, manifest, col_inst, col_fx, wheel_root=parent_root)
+        spawn_station(st, templates, mats, manifest, col_inst, col_fx, wheel_root=parent_root, enable_point_light=use_pt_lights)
 
     rails_geom = []
     for rp in plan["rails_plan"]:

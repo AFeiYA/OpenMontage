@@ -30,7 +30,7 @@ SUBSTEPS_VERIFY = 4    # 240 Hz final strict audit
 PRE_ROLL = 0.90
 POST_ROLL = 1.40
 MARBLE_RADIUS = 0.105
-GRAVITY = 19.0         # Crisp showcase gravity enabling pure ballistic bounces up to ~0.72s
+GRAVITY = 25.5         # Fast showcase gravity for brisk ball speed & generous vertical station spacing
 Y_PLANE = 0.0
 
 # Board geometry (centered along Y=0, mounting pins strictly behind at +Y)
@@ -444,7 +444,7 @@ def solve_entry_ramp(hit0_pos, v_in0):
     v0_start = 0.35
     best = None
     best_err = 1e9
-    for x_start in (-1.68, -1.52, -1.36, -1.22):
+    for x_start in (-1.82, -1.66, -1.50, -1.36):
         dx = p_lip[0] - x_start
         if dx < 0.35:
             continue
@@ -501,7 +501,7 @@ def build_forward_trajectory(
     nudges = board_collision_nudges or {}
 
     # 1. Solve true rolling entry ramp (0 .. PRE_ROLL)
-    entry = solve_entry_ramp((-0.58, 0.0, 0.0), (1.35, 0.0, -2.80))
+    entry = solve_entry_ramp((-0.70, 0.0, 0.0), (1.60, 0.0, -3.20))
     p = entry["hit0"]
     v_in = entry["v_in0"]
 
@@ -686,17 +686,17 @@ def build_forward_trajectory(
 
         if dt <= RAIL_DT_THRESHOLD:
             if dt < 0.22:
-                x_targ = max(-0.98, min(0.98, p[0] - side * 0.45))
+                x_targ = max(-1.05, min(1.05, p[0] - side * 0.62))
             elif dt < 0.38:
-                x_targ = -side * (0.45 + 0.18 * ((notes[i + 1]["note"] % 5) / 4.0))
+                x_targ = -side * (0.68 + 0.22 * ((notes[i + 1]["note"] % 5) / 4.0))
             else:
-                x_targ = -side * 0.68
+                x_targ = -side * 0.88
 
             best_b = None
             best_score = 1e9
             e_cands = (0.86, 0.89, 0.78, 0.70, 0.60) if dt > 0.52 else (0.64, 0.56, 0.72, 0.48, 0.38, 0.30, 0.80, 0.86)
             ang_lo = 2 if dt > 0.52 else 6
-            for obb_min_req in (0.36, 0.25):
+            for obb_min_req in (0.48, 0.34, 0.24):
                 if best_b is not None:
                     break
                 for e in e_cands:
@@ -709,7 +709,7 @@ def build_forward_trajectory(
                         v_out, vn_in, vn_out, u_b, n_b = res
                         if vn_in >= -0.80 or vn_out < 0.78:
                             continue
-                        if dt > 0.52 and abs(v_out[0]) > 2.40:
+                        if dt > 0.52 and abs(v_out[0]) > 2.65:
                             continue
                         p_next = (
                             p[0] + v_out[0] * dt,
@@ -721,25 +721,33 @@ def build_forward_trajectory(
                         min_vz_req = -1.9 if (i + 2 < len(notes) and (notes[i + 2]["start_time"] - notes[i + 1]["start_time"]) < 0.22) else -1.3
                         if v_next_in[2] >= min_vz_req:
                             continue
-                        if abs(p_next[0]) > 1.22:
+                        if abs(p_next[0]) > 1.28:
                             continue
-                        if dz < (-0.18 + extra_dz):
+                        if dz < (-0.05 + extra_dz):
                             continue
                         # Avoid trapping same-side bounces at shallow vertical drop
-                        if obb_min_req > 0.30 and p[0] * p_next[0] > 0.04 and dz < 0.28 + extra_dz:
+                        if obb_min_req > 0.30 and p[0] * p_next[0] > 0.04 and dz < 0.32 + extra_dz:
                             continue
                         dx_sep = abs(p_next[0] - p[0])
-                        if dz < 0.10 + extra_dz and dx_sep < 0.28:
+                        if dz < 0.12 + extra_dz and dx_sep < 0.32:
                             continue
-                        if dz < 0.22 + extra_dz and dx_sep < 0.22:
+                        if dz < 0.24 + extra_dz and dx_sep < 0.24:
                             continue
-                        if dt >= 0.25 and abs(p_next[0]) < 0.16:
+                        if dt >= 0.25 and abs(p_next[0]) < 0.18:
                             continue
 
                         cand_b_i = make_board_obb(i, p, u_b, n_b)
                         obb_bad = False
+                        obb_margin = 0.12 if obb_min_req > 0.30 else 0.06
                         for rb in recent_boards[-10:]:
-                            if obb_overlap(cand_b_i, rb, margin=0.025):
+                            if obb_overlap(cand_b_i, rb, margin=obb_margin):
+                                obb_bad = True
+                                break
+                            if (
+                                obb_min_req > 0.30
+                                and abs(cand_b_i["center"][2] - rb["center"][2]) < 0.28
+                                and abs(cand_b_i["center"][0] - rb["center"][0]) < 0.48
+                            ):
                                 obb_bad = True
                                 break
                             if point_to_obb_dist(p_next, rb["center"], rb["u"], rb["v"], rb["n"], rb["half_extents"]) < obb_min_req:

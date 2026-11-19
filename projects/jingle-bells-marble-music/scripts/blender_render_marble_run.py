@@ -741,10 +741,10 @@ def plan_lookahead_camera(
             tx = (1.0 - la_w) * mx + la_w * nx
             tz = (1.0 - la_w) * mz + la_w * nz - 0.14
 
-            # Pull back smoothly during wide U-rail glide loops
-            y_cam = -4.10 if gap_dur > 0.55 else -3.45
+            # Pull back smoothly during wide U-rail glide loops & accommodate wider station spacing
+            y_cam = -4.45 if gap_dur > 0.55 else -3.85
         else:
-            tx, tz, y_cam = mx, mz - 0.14, -3.45
+            tx, tz, y_cam = mx, mz - 0.14, -3.85
 
         raw_tx.append(tx)
         raw_ty_cam.append(y_cam)
@@ -1736,9 +1736,13 @@ def build_scene(
     if audio_path and os.path.exists(audio_path):
         scene.sequence_editor_create()
         seq = scene.sequence_editor
-        strips = getattr(seq, "strips", None) or getattr(seq, "sequences", None)
+        # Blender 5.x renamed sequences -> strips; empty bpy_prop_collection is falsy so check `is None`
+        strips = getattr(seq, "strips", None)
+        if strips is None:
+            strips = getattr(seq, "sequences", None)
         if strips is not None:
-            strips.new_sound("MarbleAudio", os.path.abspath(audio_path), channel=1, frame_start=0)
+            audio_start = int(round(float(plan.get("pre_roll", 0.0)) * fps))
+            strips.new_sound("MarbleAudio", os.path.abspath(audio_path), channel=1, frame_start=audio_start)
         scene.use_audio = True
         scene.sync_mode = "AUDIO_SYNC"
 
